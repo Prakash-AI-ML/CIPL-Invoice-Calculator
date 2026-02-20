@@ -1,0 +1,311 @@
+<style>
+        #edit_logo_image_preview,#edit_profile_image_preview{
+            max-height: 100px;
+            max-width:100px ;
+            border-radius: 5px;
+        }
+    </style>
+<style>
+  .profile-card {
+    display: flex;
+    align-items: center;
+    background: #e8ecfb;
+    border-radius: 14px;
+    padding: 24px;
+    gap: 32px;
+}
+
+.profile-section {
+    flex: 1;
+}
+
+.section-title {
+    display: block;
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 12px;
+}
+
+.image-block {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.image-wrapper {
+    position: relative;
+    width: 110px;
+    height: 110px;
+}
+
+.image-wrapper img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid #fff;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.15);
+}
+
+.edit-icon {
+    position: absolute;
+    bottom: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    background: #1f3bb3;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.profile-info h3 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+.profile-info p {
+    margin: 4px 0 0;
+    color: #333;
+}
+
+.divider {
+    width: 1px;
+    height: 110px;
+    background: #c7cce3;
+}
+
+</style>
+
+<div class="">
+    <h3>User Management</h3>
+    {% set settings_buttons = request.state.user.menus['settings']['buttons'] %}
+    {% if 'users_crud' in settings_buttons | map(attribute='button_name') | list %}
+    
+    <button class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#addUserModal">
+        Add User
+    </button>
+    {% endif %}
+    
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover" id="usersTable">
+            <thead class="table-light">
+                <tr>
+                    <th>S. No.</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <!-- <th>Group ID</th> -->
+                    {% set settings_buttons = request.state.user.menus['settings']['buttons'] %}
+                    {% if 'users_crud' in settings_buttons | map(attribute='button_name') | list %}
+                    <th>Action</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    
+    <div id="usersLoading" class="text-center py-5">
+        <div class="spinner-border text-primary"></div>
+        <p class="mt-2">Loading users...</p>
+    </div>
+    <div id="usersError" class="alert alert-danger d-none"></div>
+</div>
+
+
+
+<!-- ADD USER MODAL -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            
+            <div class="modal-header">
+                <h5 class="modal-title">Add User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body">
+                
+                <!-- USER DETAILS -->
+                
+                <div class="row">
+                    
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" id="newUsername" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="newEmail" class="form-control">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Company</label>
+                        <input type="text" id="newCompany" class="form-control">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="number" id="newPhone" class="form-control">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Role</label>
+                        <select id="newRole" class="form-select">
+                            <option value="1">Super Admin</option>
+                            <option value="2">Accounts</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 hide">
+                        <label class="form-label">Group ID</label>
+                        <input type="number" id="newGroupId" class="form-control" value="1">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="newPassword" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Profile Image</label>
+                        <input type="file" id="profile_image" class="form-control">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Logo Image</label>
+                        <input type="file" id="logo_image" class="form-control">
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="permission_div"></div>
+                
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="saveUserBtn">Save</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body">
+                
+                <input type="hidden" id="editUserId">
+                
+                <!-- USER DETAILS -->
+                
+                <div class="row">
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" id="editUsername" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="editEmail" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Company</label>
+                        <input type="text" id="editCompany" class="form-control">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="number" id="editPhone" class="form-control">
+                    </div>
+                    <div class="mb-3 hide">
+                        <label class="form-label">Group ID</label>
+                        <input type="number" id="editGroupId" class="form-control" value="1">
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Role</label>
+                        <select id="editRole" class="form-select">
+                            <option value="1">Super Admin</option>
+                            <option value="2">Accounts</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">New Password (optional)</label>
+                        <input type="password" id="editPassword" class="form-control">
+                    </div>
+
+        <div class="col-md-12">
+          <div class="profile-card">
+            <div class="profile-section">
+              <span class="section-title">Profile</span>
+              
+              <div class="image-block">
+                <div class="image-wrapper">
+                  <img id="edit_profile_image_preview" src="/static/app/images/profiles/default-profile.png" />
+                  <label for="edit_profile_image" class="edit-icon">
+                    ✎
+                  </label>
+                </div>
+                
+             
+              </div>
+              
+              <input type="file" id="edit_profile_image" class="d-none" />
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="profile-section">
+              <span class="section-title">Logo</span>
+              
+              <div class="image-block">
+                <div class="image-wrapper">
+                  <img id="edit_logo_image_preview" src="/static/app/images/logos/default-profile.png" />
+                  <label for="edit_logo_image" class="edit-icon">
+                    ✎
+                  </label>
+                </div>
+              </div>
+              
+              <input type="file" id="edit_logo_image" class="d-none" />
+            </div>
+          </div>
+        </div>
+      </div>
+                
+                
+                
+                <hr>
+                
+                <div class="permission_div_edit"></div>
+                
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="updateUserBtn">Update</button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+
+
+<script src="/static/app/users1.js"></script>

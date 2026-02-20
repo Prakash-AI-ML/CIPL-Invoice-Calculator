@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}FastAPI App{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+</head>
+<body>
+    <nav>
+        {% if request.state.user %}
+            <a href="#" onclick="navigate('/app/dashboard'); return false;">Dashboard</a>
+            {% if request.state.user.role == 'super_admin' %}
+                <a href="#" onclick="navigate('/app/users'); return false;">Users</a>
+                <a href="#" onclick="navigate('/app/aging'); return false;">Payment Aging</a>
+            {% endif %}
+            <a href="#" onclick="navigate('/logout'); return false;">Logout</a>
+        {% else %}
+            <a href="#" onclick="navigate('/'); return false;">Login</a>
+        {% endif %}
+    </nav>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Global JS: Define ROOT_PATH, API_BASE, and utility functions -->
+    <script>
+        // GLOBAL VARIABLES - Load ROOT_PATH from cookie
+        let ROOT_PATH = "";
+        let API_BASE = "";
+
+        // Initialize ROOT_PATH and API_BASE from cookie
+        function initGlobalPaths() {
+            rootPathCookie = getCookie('root_path');
+            rootPathCookie = rootPathCookie.replace(/"/g, '')
+            // If ROOT_PATH is empty, "/" or undefined, set to empty string
+            if (!rootPathCookie || rootPathCookie === '/' || rootPathCookie === '' || rootPathCookie === '""') {
+                ROOT_PATH = "";
+                API_BASE = "http://localhost:8000";
+            } else {
+                // Production mode with proxy (e.g., /soa)
+                ROOT_PATH = rootPathCookie;
+                API_BASE = "https://payable.pixxa.tech:8080" + ROOT_PATH;
+            }
+            
+            console.log('=== GLOBAL PATH CONFIGURATION ===');
+            console.log('ROOT_PATH from cookie:', ROOT_PATH || '(empty - local mode)');
+            console.log('API_BASE:', API_BASE);
+            console.log('Current URL:', window.location.href);
+            console.log('Mode:', ROOT_PATH ? 'Production (Proxy)' : 'Local Development');
+            console.log('================================');
+        }
+
+        // Global getCookie function
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            console.log('getCookie("' + name + '"):', cookieValue ? 'Found: ' + cookieValue : 'Missing');
+            return cookieValue;
+        }
+
+        // Global navigation function
+        function navigate(path) {
+            // Only add ROOT_PATH if it's not empty and not "/"
+            const fullPath = (ROOT_PATH && ROOT_PATH !== '/') ? ROOT_PATH + path : path;
+            console.log('Navigating from:', path, 'to:', fullPath);
+            window.location.href = fullPath;
+        }
+
+        // Global apiFetch wrapper (with 401 redirect)
+        async function apiFetch(url, options = {}) {
+            const token = getCookie('access_token');
+            if (!token) {
+                console.error('apiFetch: No token - redirecting to login');
+                navigate('/');
+                return null;
+            }
+            
+            // Build full URL based on ROOT_PATH
+            let fullUrl;
+            if (url.startsWith('http')) {
+                // Already a full URL
+                fullUrl = url;
+            } else {
+                // Relative URL - add API_BASE only if ROOT_PATH exists
+                if (ROOT_PATH && ROOT_PATH !== '/') {
+                    fullUrl = API_BASE + url;
+                } else {
+                    // Local mode - just use origin + url
+                    fullUrl = window.location.origin + url;
+                }
+            }
+            
+            options.headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+            console.log('apiFetch:', url, '→', fullUrl);
+            
+            const response = await fetch(fullUrl, options);
+            console.log('apiFetch response status:', response.status);
+            
+            if (response.status === 401) {
+                console.error('apiFetch: 401 Unauthorized - clearing token & redirecting');
+                document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                navigate('/');
+            }
+            return response;
+        }
+
+        // Initialize paths on page load
+        initGlobalPaths();
+    </script>
+</body>
+</html>

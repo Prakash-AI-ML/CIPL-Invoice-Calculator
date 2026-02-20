@@ -1,0 +1,2066 @@
+
+
+<style>
+  
+  .card {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    padding: 20px;
+  }
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 18px;
+  }
+  .new-btn {
+    color: #1976d2;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .subtext {
+    margin-top: 14px;
+    font-size: 13px;
+    color: #666;
+  }
+  .bar {
+    margin-top: 6px;
+    height: 10px;
+    background: #eee;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(to right, #4caf50 5%, #fbc02d 95%);
+  }
+  .amounts {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 18px;
+  }
+  .block {
+    width: 48%;
+  }
+  .label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 6px;
+  }
+  .value {
+    font-size: 22px;
+    font-weight: 600;
+    cursor: default;
+  }
+  .current { color: #1976d2; }
+  .overdue { color: #e65100; cursor: pointer; }
+  
+  /* Dropdown */
+  .dropdown {
+    position: relative;
+  }
+  .popover {
+    position: absolute;
+    top: 36px;
+    right: 0;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    padding: 12px 16px;
+    width: 220px;
+    font-size: 14px;
+    display: none;
+    z-index: 10;
+  }
+  .popover.active {
+    display: block;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+  }
+  .row span:last-child {
+    color: #1976d2;
+    font-weight: 500;
+  }
+  
+  /* Chart */
+  .chart-container {
+    margin-top: 24px;
+    height: 120px;
+  }
+  svg {
+    width: 100%;
+    height: 100%;
+  }
+  .line {
+    fill: none;
+    stroke: #1976d2;
+    stroke-width: 2;
+  }
+  .dot {
+    fill: #1976d2;
+  }
+  .chart-container {
+    position: relative;
+    height: 200px;
+    width: 100%;
+  }
+  
+  .filters{
+    display:flex;
+    gap:10px;
+    margin-bottom:20px;
+  }
+  select, button{
+    padding:8px 12px;
+    border-radius:6px;
+    border:1px solid #ccc;
+  }
+  .dashboard {
+    display: flex;
+    gap: 20px;
+  }
+  
+  
+  
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .dropdown {
+    font-size: 13px;
+    color: #666;
+    cursor: pointer;
+  }
+  
+  .toggle {
+    margin: 10px 0;
+  }
+  
+  .toggle button {
+    padding: 5px 12px;
+    border: 1px solid #ccc;
+    background: #eee;
+    cursor: pointer;
+  }
+  
+  .toggle .active {
+    background: #ddd;
+    font-weight: bold;
+  }
+  
+  .totals {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+  }
+  
+  .green { color: #2ecc71; }
+  .red { color: #e74c3c; }
+  
+  .note {
+    font-size: 12px;
+    color: #888;
+    margin-top: 10px;
+  }
+  
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .filters {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .filters select {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: #fff;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  
+  
+  .chart-wrapper {
+    position: relative;
+    height: 360px; /* restrict chart height */
+    padding: 15px;
+  }
+  
+  .chart-wrapper canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+</style>      
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="filters" style="float: right;">
+      <select id="payableYear">
+        <option value="all">All</option>
+        <option value="2026">2026</option>
+        <option value="2025">2025</option>
+        <option value="2024">2024</option>
+        <option value="2023">2023</option>
+        <option value="2022">2022</option>
+        <option value="2021">2021</option>
+      </select>
+      
+      <select id="payableQuarter">
+        <option value="all">All</option>
+        <option value="q1">Q1</option>
+        <option value="q2">Q2</option>
+        <option value="q3">Q3</option>
+        <option value="q4">Q4</option>
+      </select>
+    </div>
+  </div>
+  <!-- ================================================================================== -->
+  
+  <div class="col-md-5">
+    <div class="card" style="height: 480px;">
+      <div class="card-header">
+        <h2>Invoice Analysis</h2>
+        
+        
+      </div>
+      
+      
+      <center>
+        
+        <canvas id="payableanalysisChart" class="mt-3" style="max-width: 350px;"></canvas>
+      </center>
+      
+      
+      
+    </div>
+  </div> 
+  
+
+  <div class="col-md-7">
+    <div class="card" style="height: 480px;">
+      <div class="card-header">
+        <!-- <h3>Income and Expense</h3> -->
+        <h3>Monthly Invoice Analysis</h3>
+        
+        
+      </div>
+      
+      
+      <!-- <canvas id="payableChart" height="200"></canvas> -->
+      
+      <div class="chart-wrapper">
+        <canvas id="payableChart"></canvas>
+      </div>
+      
+      <!-- <p class="note">* Income and expense values displayed are exclusive of taxes.</p> -->
+    </div>
+  </div>
+  
+  
+  
+  <!-- =================================================================================== -->
+  <div class="col-xl-6 grid-margin stretch-card flex-column hide">
+    <h5 class="mb-2 text-titlecase mb-4">Status statistics</h5>
+    <div class="row">
+      <div class="col-md-6 grid-margin stretch-card">
+        <div class="card">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <p class="mb-0 text-muted">Transactions</p>
+              <p class="mb-0 text-muted">+1.37%</p>
+            </div>
+            <h4>1352</h4>
+            <canvas id="transactions-chart" class="mt-auto" height="65"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 grid-margin stretch-card">
+        <div class="card">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <p class="mb-2 text-muted">Sales</p>
+                <h6 class="mb-0">563</h6>
+              </div>
+              <div>
+                <p class="mb-2 text-muted">Orders</p>
+                <h6 class="mb-0">720</h6>
+              </div>
+              <div>
+                <p class="mb-2 text-muted">Revenue</p>
+                <h6 class="mb-0">5900</h6>
+              </div>
+            </div>
+            <canvas id="sales-chart-a" class="mt-auto" height="65"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row h-100">
+      <div class="col-md-12 stretch-card grid-margin grid-margin-md-0">
+        <div class="card">
+          <div class="card-body d-flex flex-column justify-content-between">
+            <p class="text-muted">Payable Analytics</p>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h3 class="mb-">27632</h3>
+              <h3 class="mb-">78%</h3>
+            </div>
+            <canvas id="sales-chart-b" class="mt-auto" height="38"></canvas>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </div>
+  <div class="col-xl-6 grid-margin stretch-card flex-column hide">
+    <h5 class="mb-2 text-titlecase mb-4">Income statistics</h5>
+    <div class="row h-100">
+      <div class="col-md-12 stretch-card">
+        <div class="card">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start flex-wrap">
+              <div>
+                <p class="mb-3">Yearly Payable</p>
+                <h3>67842</h3>
+              </div>
+              <div id="income-chart-legend" class="d-flex flex-wrap mt-1 mt-md-0"></div>
+            </div>
+            <canvas id="income-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row hide">
+  <div class="col-xl-6 grid-margin stretch-card hide">
+    <div class="card" style="height: 550px;">
+      <div class="card-body border-bottom">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+          <h6 class="mb-2 mb-md-0 text-uppercase font-weight-medium">Invoices by Clients</h6>
+          <div class="dropdown">
+            <button class="btn bg-white p-0 pb-1 text-muted btn-sm dropdown-toggle" type="button" id="dropdownMenuSizeButton3" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Last 30 days
+            </button>
+            <div class="dropdown-menu" aria-labelledby="dropdownMenuSizeButton3">
+              <h6 class="dropdown-header">Settings</h6>
+              <a class="dropdown-item" href="javascript:;">Action</a>
+              <a class="dropdown-item" href="javascript:;">Another action</a>
+              <a class="dropdown-item" href="javascript:;">Something else here</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="javascript:;">Separated link</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <canvas id="sales-chart-c" class="mt-2" ></canvas>
+        <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3 mt-4">
+          <div class="d-flex flex-column justify-content-center align-items-center">
+            <p class="text-muted">Gross Sales</p>
+            <h5>492</h5>
+            <div class="d-flex align-items-baseline">
+              <p class="text-success mb-0">0.5%</p>
+              <i class="typcn typcn-arrow-up-thick text-success"></i>
+            </div>
+          </div>
+          <div class="d-flex flex-column justify-content-center align-items-center">
+            <p class="text-muted">Purchases</p>
+            <h5>87k</h5>
+            <div class="d-flex align-items-baseline">
+              <p class="text-success mb-0">0.8%</p>
+              <i class="typcn typcn-arrow-up-thick text-success"></i>
+            </div>
+          </div>
+          <div class="d-flex flex-column justify-content-center align-items-center">
+            <p class="text-muted">Tax Return</p>
+            <h5>882</h5>
+            <div class="d-flex align-items-baseline">
+              <p class="text-danger mb-0">-04%</p>
+              <i class="typcn typcn-arrow-down-thick text-danger"></i>
+            </div>
+          </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="dropdown">
+            <button class="btn bg-white p-0 pb-1 pt-1 text-muted btn-sm dropdown-toggle" type="button" id="dropdownMenuSizeButton3" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Last 7 days
+            </button>
+            <div class="dropdown-menu" aria-labelledby="dropdownMenuSizeButton3">
+              <h6 class="dropdown-header">Settings</h6>
+              <a class="dropdown-item" href="javascript:;">Action</a>
+              <a class="dropdown-item" href="javascript:;">Another action</a>
+              <a class="dropdown-item" href="javascript:;">Something else here</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="javascript:;">Separated link</a>
+            </div>
+          </div>
+          <p class="mb-0">overview</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-6 col-xl-6 grid-margin stretch-card hide">
+    <div class="card" style="height: 550px;">
+      <div class="card-body border-bottom">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+          <h6 class="mb-2 mb-md-0 text-uppercase font-weight-medium">Payable Statistics</h6>
+          <div class="dropdown">
+            <button class="btn bg-white p-0 pb-1 text-muted btn-sm dropdown-toggle" type="button" id="dropdownMenuSizeButton4" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Last 7 days
+            </button>
+            <div class="dropdown-menu" aria-labelledby="dropdownMenuSizeButton4">
+              <h6 class="dropdown-header">Settings</h6>
+              <a class="dropdown-item" href="javascript:;">Action</a>
+              <a class="dropdown-item" href="javascript:;">Another action</a>
+              <a class="dropdown-item" href="javascript:;">Something else here</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="javascript:;">Separated link</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-body">
+        <canvas id="sales-chart-d" style="height:435px;width: 100%;"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row hide">
+  <div class="col-md-4 grid-margin stretch-card hide">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between justify-content-md-center justify-content-xl-between flex-wrap mb-4">
+          <div>
+            <p class="mb-2 text-md-center text-lg-left">Total Dibit</p>
+            <h3 class="mb-0">RM 8,742</h3>
+          </div>
+          <i class="typcn typcn-briefcase icon-xl text-secondary"></i>
+        </div>
+        <canvas id="expense-chart" height="80"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 grid-margin stretch-card hide">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between justify-content-md-center justify-content-xl-between flex-wrap mb-4">
+          <div>
+            <p class="mb-2 text-md-center text-lg-left">Total Credit</p>
+            <h3 class="mb-0">RM 47,840</h3>
+          </div>
+          <i class="typcn typcn-chart-pie icon-xl text-secondary"></i>
+        </div>
+        <canvas id="budget-chart" height="80"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4 grid-margin stretch-card hide">
+    <div class="card">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between justify-content-md-center justify-content-xl-between flex-wrap mb-4">
+          <div>
+            <p class="mb-2 text-md-center text-lg-left">Total Balance</p>
+            <h3 class="mb-0">RM 7,243</h3>
+          </div>
+          <i class="typcn typcn-clipboard icon-xl text-secondary"></i>
+        </div>
+        <canvas id="balance-chart" height="80"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="row">
+  
+  <div class="col-md-4">
+    <div class="card" style="height: 100%;">
+      <div class="header">
+        <span>Total Payables
+          <span class="new-btn" title="The current and overdue outstanding amounts to be paid to your vendor.">?</span>
+        </span>
+        
+      </div>
+      
+      <div class="subtext">
+        Total Unpaid Bills $<span id="totalUnpaid">0.00</span>
+      </div>
+      
+      <div class="bar">
+        <div class="bar-fill"></div>
+      </div>
+      
+      <div class="amounts">
+        <div class="block">
+          <a id="currentLink" 
+          
+          style=" width:100%; padding:0px; text-decoration:none; color:inherit;">
+          
+          <div class="label">CURRENT</div>
+          <div class="value current">
+            $<span id="currentAmount">0.00</span>
+          </div>
+          
+        </a>
+        <a id="notInOverdueLink"
+        style=" width:100%; padding:0px; text-decoration:none; color:inherit;">
+        
+        <div class="label">NOT IN OVERDUE</div>
+        <div class="value not_in_overdue">
+          $<span id="notinoverdueAmount">0.00</span>
+        </div>
+        
+      </a>
+    </div>
+    
+    <div class="block dropdown">
+      <div class="label">OVERDUE</div>
+      <div class="value overdue" onclick="toggleDropdown(event)">
+        <!-- <div class="value overdue" onclick="toggleDropdown()"> -->
+          $<span id="overdueAmount">0.00</span> ▾
+        </div>
+        
+        <div id="popover" class="popover"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="col-md-8">
+  <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+    <!-- Card Header -->
+      <div class="card-header">
+        <h3>Cash Flow</h3>
+        
+      
+    </div>
+    
+    <!-- Main Content: Chart + Sidebar -->
+    <div class="flex flex-col lg:flex-row h-[250px]">
+      <!-- Chart Area -->
+      <div class="flex-1 p-4 bg-white">
+        <div class="chart-container">
+          <canvas id="cashFlowChart"></canvas>
+        </div>
+      </div>
+      
+      
+      <div class="w-full  lg:w-80 bg-gray-50 border border-gray-200 h-[250px]">
+        <div class="flex flex-col h-full divide-y divide-gray-300 text-center">
+          
+          <div class="flex-1 flex items-center justify-center">
+            <div>
+              <p class="text-sm text-gray-600">
+                Cash as on <span id="startDate">--</span>
+              </p>
+              <p class="text-xl font-bold text-gray-900 mt-2" id="startCash">
+                $0.00
+              </p>
+            </div>
+          </div>
+          
+          <div class="flex-1 flex items-center justify-center">
+            <div>
+              <p class="text-sm text-gray-600 flex items-center justify-center">
+                <span class="w-4 h-2 bg-green-500 rounded-full mr-3"></span>
+                Credit
+              </p>
+              <p class="text-xl font-semibold text-green-600 mt-2" id="incoming">
+                $0.00 +
+              </p>
+            </div>
+          </div>
+          
+          <div class="flex-1 flex items-center justify-center">
+            <div>
+              <p class="text-sm text-gray-600 flex items-center justify-center">
+                <span class="w-4 h-2 bg-red-500 rounded-full mr-3"></span>
+                Debit
+              </p>
+              <p class="text-xl font-semibold text-red-600 mt-2" id="outgoing">
+                $0.00 -
+              </p>
+            </div>
+          </div>
+          
+          <div class="flex-1 flex items-center justify-center">
+            <div>
+              <p class="text-sm text-gray-600">
+                Cash as on <span id="endDate">--</span>
+              </p>
+              <p class="text-xl font-bold text-gray-900 mt-2" id="endCash">
+                $0.00
+              </p>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+      
+      
+      
+    </div>
+  </div>
+  
+</div>
+</div>
+
+<div class="row">
+  
+  
+  <div class="col-md-6" style = "display:none;">
+    <div class="card" style="height: 490px;">
+      <div class="card-header">
+        <h2>Income and Expense</h2>
+        
+        
+      </div>
+      
+      
+      
+      <canvas id="incomeExpenseChart"></canvas>
+      
+      <div class="totals">
+        <div>
+          <span class="green">Total Income</span>
+          <h4 id="totalIncome">$0</h4>
+        </div>
+        <div>
+          <span class="red">Total Expenses</span>
+          <h4 id="totalExpense">$0</h4>
+        </div>
+      </div>
+      
+      <p class="note">* Income and expense values displayed are exclusive of taxes.</p>
+    </div>
+  </div> 
+  
+  
+  
+  <div class="col-md-5 mt-5">
+    <!-- TOP EXPENSES -->
+    <div class="card"  style="height: 590px;">
+      <div class="card-header">
+        <h2>Top Expenses</h2>
+        
+        
+      </div>
+      
+      <canvas id="expensePieChart"></canvas>
+    </div>
+  </div>
+  
+  
+  <div class="col-md-7 mt-5">
+    <div class="card" style="height: 590px;">
+      <div class="card-header">
+        <!-- <h3>Income and Expense</h3> -->
+        <h3>Monthly Category – Credit vs Debit</h3>
+        
+        
+      </div>
+      
+      
+      <canvas id="categoryCreditDebitChart"></canvas>
+      
+      <div class="totals" id="totalsByCategory">
+      </div>
+      
+      <!-- <p class="note">* Income and expense values displayed are exclusive of taxes.</p> -->
+    </div>
+  </div>
+  
+  <div class="row"></div>
+  
+  
+    <div class="col-md-5">
+    <div class="card" style="height: 480px;">
+      <div class="card-header">
+        <h2>Current month Payment Analysis</h2>
+        
+        
+      </div>
+      
+      
+      <center>
+        
+        <canvas id="currentPaymentChart" class="mt-3" style="max-width: 300px; max-height: 300px;"></canvas>
+      </center>
+      
+
+<div class="amounts">
+        <div class="block">
+          <a id="approvedLink" 
+          
+          style=" width:100%; padding:0px; text-decoration:none; color:inherit;">
+          
+          <div class="label text-success fw-bold">Total Approved</div>
+          <div class="value approved">
+            $ <span id="totalApproved">0.00</span>
+          </div>
+          
+        </a>
+      </div>
+        <div>
+        <a id="pendingLink"
+        style=" width:100%; padding:0px; text-decoration:none; color:inherit;">
+        
+        <div class="label text-primary fw-bold">Total Pending</div>
+        <div class="value pending">
+          $ <span id="totalPending">0.00</span>
+        </div>
+        
+      </a>
+    </div>
+
+
+    </div>
+  </div> 
+  
+  <div class="row"></div>
+  <div class="row"></div>
+</div>
+</div>
+
+
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  
+  function toggleDropdown(event) {
+    event.stopPropagation(); // 🔑 stop document click
+    document.getElementById('popover').classList.toggle('active');
+  }
+  document.getElementById('popover').addEventListener('click', function (e) {
+    e.stopPropagation();
+  });
+  
+  /* ---- API CALL ---- */
+  async function loadTotalPayables() {
+    const response = await fetch(
+    `${API_BASE}/v1/dashboard/total-payable`,
+    {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token') || getCookie('access_token')}`
+      }
+    }
+    );
+    
+    const data = await response.json();
+    const res = data.response;
+    
+    /* ---- CALCULATIONS ---- */
+    const currentAmount = res.current.total_amount;
+    
+    
+    const overdueBuckets = res.overdue;
+    let overdueTotal = 0;
+    
+    Object.values(overdueBuckets).forEach(b => {
+      overdueTotal += b.total_amount;
+    });
+    
+    const totalUnpaid = currentAmount + overdueTotal;
+    
+    /* ---- UPDATE UI ---- */
+    document.getElementById('currentAmount').innerText =
+    currentAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    
+    document.getElementById('notinoverdueAmount').innerText =
+    res.not_in_overdue.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    
+    document.getElementById('overdueAmount').innerText =
+    overdueTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    
+    document.getElementById('totalUnpaid').innerText =
+    totalUnpaid.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    
+    /* ---- DROPDOWN BREAKUP ---- */
+    const popover = document.getElementById('popover');
+    popover.innerHTML = '';
+    
+    Object.entries(overdueBuckets).forEach(([range, value]) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.style='width:100%';
+      
+      row.innerHTML = `
+     <a style="padding:0px;" href="${API_BASE}/app/invoicesaging?range=${encodeURIComponent(range)}"
+     style="display:flex; width:100%; text-decoration:none; color:inherit;">
+      <span style="width:48%;padding: 5px;">${range.replace('_', '–')} days</span> 
+      <span style="width:52%;padding: 5px;">$${value.total_amount.toLocaleString('en-IN', {
+      minimumFractionDigits: 2
+    })}</span></a>
+    `;
+    
+    popover.appendChild(row);
+  });
+  
+  /* ---- PROGRESS BAR ---- */
+  const overduePercentage = (overdueTotal / totalUnpaid) * 100;
+  document.querySelector('.bar-fill').style.width =
+  overduePercentage + '%';
+}
+
+/* ---- INIT ---- */
+loadTotalPayables();
+</script>
+
+
+
+<script>
+  
+  let chart;
+  
+  function formatINR(amount) {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'MYR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  }
+  
+  function formatMonthLabel(monthStr) {
+    const [year, month] = monthStr.split('-');
+    const date = new Date(year, month - 1);
+    return date.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+  }
+  
+  function getCashFlowFilters() {
+    const year = document.getElementById("payableYear").value;
+    const quarter = document.getElementById("payableQuarter").value;
+    
+    
+    return {
+      year: year === "all" ? null : Number(year),
+      quarter: quarter === "all" ? null : quarter
+    };
+  }
+  
+  async function fetchCashFlow(filter) {
+    try {
+      const response = await fetch(`${API_BASE}/v1/dashboard/cash-flow`, {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || getCookie('access_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(filter)
+      });
+      
+      if (!response.ok) throw new Error('API Error: ' + response.status);
+      const data = await response.json();
+      return data.response || [];
+    } catch (err) {
+      console.error('Fetch error:', err);
+      alert('Failed to load cash flow data');
+      return [];
+    }
+  }
+  
+  function updateChartAndSummary(data) {
+    // Sort data by month (oldest first)
+    data.sort((a, b) => a.month.localeCompare(b.month));
+    
+    const labels = data.map(item => formatMonthLabel(item.month));
+    const incomingData = data.map(item => item.monthly_credit);
+    const outgoingData = data.map(item => item.monthly_debit);
+    
+    const totalIncoming = incomingData.reduce((sum, val) => sum + val, 0);
+    const totalOutgoing = outgoingData.reduce((sum, val) => sum + val, 0);
+    const netChange = totalIncoming - totalOutgoing;
+    
+    // Assume starting balance is 0 for the selected period (or you can fetch actual start balance separately)
+    const startBalance = 0;
+    const endBalance = startBalance + netChange;
+    
+    // Update sidebar
+    document.getElementById('startDate').textContent = labels[0] || '--';
+    document.getElementById('startCash').textContent = formatINR(startBalance);
+    document.getElementById('incoming').textContent = formatINR(totalIncoming) + ' +';
+    document.getElementById('outgoing').textContent = formatINR(totalOutgoing) + ' -';
+    document.getElementById('endDate').textContent = labels[labels.length - 1] || '--';
+    document.getElementById('endCash').textContent = formatINR(endBalance);
+    
+    // Destroy previous chart
+    if (chart) chart.destroy();
+    
+    const ctx = document.getElementById('cashFlowChart').getContext('2d');
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+        {
+          label: 'Credit',
+          data: incomingData,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: '#10b981'
+        },
+        {
+          label: 'Debit',
+          data: outgoingData,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4,
+          pointBackgroundColor: '#ef4444'
+        }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              padding: 20,
+              font: { size: 14 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + formatINR(context.parsed.y);
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: value => formatINR(value)
+            },
+            grid: {
+              color: 'rgba(0,0,0,0.05)'
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        }
+      }
+    });
+  }
+  
+  async function loadData() {
+    const filter = getCashFlowFilters();
+    const data = await fetchCashFlow(filter);
+    updateChartAndSummary(data);
+  }
+  
+  // Load on start
+  loadData();
+  
+  // Reload on filter change
+  document.getElementById('payableYear').addEventListener('change', loadData);
+  document.getElementById('payableQuarter').addEventListener('change', loadData);
+</script>
+
+<script>
+  $(document).ready(function() {
+  $(document).click(function() {
+    document.getElementById('popover').classList.remove('active');
+
+  });
+  });
+  async function fetchMonthlyPayable(filter) {
+    try {
+      const response = await fetch(`${API_BASE}/v1/dashboard/payable-monthly`, {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || getCookie('access_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(filter)
+      });
+      
+      if (!response.ok) throw new Error('API Error: ' + response.status);
+      const data = await response.json();
+      return data.response || [];
+    } catch (err) {
+      console.error('Fetch error:', err);
+      alert('Failed to load cash flow data');
+      return [];
+    }
+  }
+  let chart1;
+  function updateMonthlyPayable(data) {
+    // Sort data by month (oldest first)
+    data.sort((a, b) => a.month.localeCompare(b.month));
+    
+    const labels = data.map(item => formatMonthLabel(item.month));
+    const paidinvoicesData = data.map(item => item.paid_invoices);
+    const unpaidinvoicesData = data.map(item => item.unpaid_invoices);
+    const partiallypaidinvoicesData = data.map(item => item.partially_paid_invoices);
+    
+    
+    
+    
+    // Destroy previous chart
+    if (chart1) chart1.destroy();
+    
+    const ctx = document.getElementById('payableChart').getContext('2d');
+    chart1 = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+        {
+          label: 'Paid Invoices',
+          data: paidinvoicesData,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 2,
+          pointBackgroundColor: '#10b981'
+        },
+        {
+          label: 'Unpaid Invoices',
+          data: unpaidinvoicesData,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 2,
+          pointBackgroundColor: '#ef4444'
+        },
+        {
+          label: 'Partially Paid Invoice',
+          data: partiallypaidinvoicesData,
+          borderColor: '#FCA11E',
+          backgroundColor: 'rgba(255, 195, 110, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 2,
+          pointBackgroundColor: '#FCA11E'
+        }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              padding: 20,
+              font: { size: 14 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': ' + context.parsed.y;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            title: 'Count',
+            beginAtZero: true,
+            ticks: {
+              callback: value => value
+            },
+            // ticks: value,
+            grid: {
+              color: 'rgba(0,0,0,0.05)'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Month'
+            },
+            grid: {
+              display: false
+            }
+          }
+        },
+        interaction: {
+          mode: 'index',
+          intersect: false
+        }
+      }
+    });
+  }
+  
+  async function loadPayableData() {
+    const filter = getMonthlyPayableFilters();
+    const data = await fetchMonthlyPayable(filter);
+    updateMonthlyPayable(data);
+  }
+  
+  
+  
+  async function fetchPayableAnalysis(filter) {
+    try {
+      const response = await fetch(`${API_BASE}/v1/dashboard/payable-analysis`, {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || getCookie('access_token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(filter)
+      });
+      
+      if (!response.ok) throw new Error('API Error: ' + response.status);
+      const data = await response.json();
+      return data.response || [];
+    } catch (err) {
+      console.error('Fetch error:', err);
+      alert('Failed to load cash flow data');
+      return [];
+    }
+  }
+  let chart2;
+  
+  
+  function updatePayableAnalysis(data) {
+    if (!data) return;
+    
+    const {
+      total_invoices,
+      paid_invoices,
+      unpaid_invoices,
+      partially_paid_invoices
+    } = data;
+    
+    // Destroy previous chart
+    if (chart2) {
+      chart2.destroy();
+    }
+    
+    const ctx = document
+    .getElementById('payableanalysisChart')
+    .getContext('2d');
+    
+    chart2 = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: [
+        'Paid Invoices',
+        'Partially Paid Invoices',
+        'Unpaid Invoices'
+        ],
+        datasets: [
+        {
+          data: [
+          paid_invoices,
+          partially_paid_invoices,
+          unpaid_invoices
+          ],
+          backgroundColor: [
+          '#10b981', // green
+          '#FCA11E', // yellow
+          '#ef4444'  // red
+          ],
+          borderWidth: 0,
+          hoverOffset: 10
+        }
+        ]
+      },
+      options: {
+        layout: {
+          padding: 0
+        },
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '75%', // donut thickness
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              usePointStyle: true,
+              padding: 8,
+              font: { size: 12 }
+            },
+            // display:false
+          },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                const value = context.raw;
+                const percent = ((value / total_invoices) * 100).toFixed(1);
+                return `${context.label}: ${value} (${percent}%)`;
+              }
+            }
+          }
+        }
+      },
+      plugins: [
+      {
+        // Center text plugin
+        id: 'centerText',
+        beforeDraw(chart) {
+          const { ctx, width, height } = chart;
+          ctx.save();
+          ctx.font = 'bold 18px Segoe UI';
+          ctx.fillStyle = '#111';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(
+          `${total_invoices}`,
+          width / 2,
+          height / 2 - 10
+          );
+          ctx.font = '14px Segoe UI';
+          ctx.fillStyle = '#666';
+          ctx.fillText(
+          'Total Invoices',
+          width / 2,
+          height / 2 + 12
+          );
+          ctx.restore();
+        }
+      }
+      ]
+    });
+  }
+  
+  async function loadPayableAnalysisData() {
+    const filter = getPayableFilters();
+    const data = await fetchPayableAnalysis(filter);
+    updatePayableAnalysis(data);
+  }
+  
+</script>
+
+<script>
+  /* ===========================
+  GLOBALS
+  =========================== */
+  let incomeExpenseChart = null;
+  let expensePieChart = null;
+  
+  const TOKEN =
+  localStorage.getItem("token") ||
+  (typeof getCookie === "function" ? getCookie("access_token") : null);
+  /* ===========================
+  HELPERS
+  =========================== */
+  function getIncomeFilters() {
+    const year = document.getElementById("payableYear").value;
+    const quarter = document.getElementById("payableQuarter").value;
+    
+    
+    return {
+      // year: year === "all" ? 'all' : Number(year),
+      year: year === "all" ? null : Number(year),
+      quarter: quarter === "all" ? null : quarter
+    };
+  }
+  
+  function getIncomeFilters1() {
+    const year = document.getElementById("payableYear").value;
+    const quarter = document.getElementById("payableQuarter").value;
+    
+    
+    return {
+      // year: year === "all" ? 'all' : Number(year),
+      year: year === "all" ? null : Number(year),
+      quarter: quarter === "all" ? null : quarter
+    };
+  }
+  
+  function getExpenseFilters() {
+    const year = document.getElementById("payableYear").value;
+    const quarter = document.getElementById("payableQuarter").value;
+    
+    return {
+      // year: year === "all" ? 'all' : Number(year),
+      year: year === "all" ? null : Number(year),
+      quarter: quarter === "all" ? null : quarter
+    };
+  }
+  
+  function getMonthlyPayableFilters() {
+    const year = document.getElementById("payableYear").value;
+    const quarter = document.getElementById("payableQuarter").value;
+    
+    return {
+      // year: year === "all" ? 'all' : Number(year),
+      year: year === "all" ? null : Number(year),
+      quarter: quarter === "all" ? null : quarter
+    };
+  }
+  
+  function getPayableFilters() {
+    const year = document.getElementById("payableYear").value;
+    const quarter = document.getElementById("payableQuarter").value;
+    
+    return {
+      // year: year === "all" ? 'all' : Number(year),
+      year: year === "all" ? null : Number(year),
+      quarter: quarter === "all" ? null : quarter
+    };
+  }
+  function buildPayload(filters) {
+    const payload = {};
+    if (filters.year) payload.year = filters.year;
+    if (filters.quarter) payload.quarter = filters.quarter;
+    return payload;
+  }
+  
+  function authHeaders() {
+    return {
+      accept: "application/json",
+      Authorization: `Bearer ${TOKEN}`,
+      "Content-Type": "application/json"
+    };
+  }
+  
+  /* ===========================
+  INCOME & EXPENSE BAR CHART
+  =========================== */
+  function loadIncomeExpense() {
+    const filters = getIncomeFilters();
+    
+    fetch(`${API_BASE}/v1/dashboard/cash-flow-category`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(buildPayload(filters))
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Unauthorized");
+      return res.json();
+    })
+    .then(data => {
+      if (!Array.isArray(data.response)) return;
+      
+      const monthly = {};
+      let totalIncome = 0;
+      let totalExpense = 0;
+      
+      data.response.forEach(item => {
+        if (!item.month) return;
+        
+        const month = item.month.trim();
+        const value = Number(item.net_cash_flow) || 0;
+        
+        if (!monthly[month]) {
+          monthly[month] = { income: 0, expense: 0 };
+        }
+        
+        if (value >= 0) {
+          monthly[month].income += value;
+          totalIncome += value;
+        } else {
+          monthly[month].expense += Math.abs(value);
+          totalExpense += Math.abs(value);
+        }
+      });
+      
+      const labels = Object.keys(monthly).sort(
+      (a, b) => new Date(a) - new Date(b)
+      );
+      
+      const incomeData = labels.map(m => monthly[m].income);
+      const expenseData = labels.map(m => monthly[m].expense);
+      
+      document.getElementById("totalIncome").innerText =
+      "$" + totalIncome.toLocaleString();
+      document.getElementById("totalExpense").innerText =
+      "$" + totalExpense.toLocaleString();
+      
+      if (incomeExpenseChart) incomeExpenseChart.destroy();
+      
+      incomeExpenseChart = new Chart(
+      document.getElementById("incomeExpenseChart"),
+      {
+        type: "bar",
+        data: {
+          labels,
+          datasets: [
+          {
+            label: "Income",
+            data: incomeData,
+            backgroundColor: "#2ecc71"
+          },
+          {
+            label: "Expense",
+            data: expenseData,
+            backgroundColor: "#e67e22"
+          }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { beginAtZero: true }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: ctx => `$ ${ctx.raw.toLocaleString()}`
+              }
+            }
+          }
+        }
+      }
+      );
+    })
+    .catch(err => console.error("Income/Expense error:", err.message));
+  }
+  
+  /* ===========================
+  TOP EXPENSES PIE CHART
+  =========================== */
+  function loadTopExpenses() {
+    const filters = getExpenseFilters();
+    
+    fetch(`${API_BASE}/v1/dashboard/category-expenses`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(buildPayload(filters))
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Unauthorized");
+      return res.json();
+    })
+    .then(data => {
+      if (!Array.isArray(data.response)) return;
+      
+      const labels = [];
+      const values = [];
+      let total = 0;
+      
+      data.response.forEach(item => {
+        const val = Number(item.total_debit) || 0;
+        labels.push(item.merchant_category);
+        values.push(val);
+        total += val;
+      });
+      
+      if (expensePieChart) expensePieChart.destroy();
+      
+      expensePieChart = new Chart(
+      document.getElementById("expensePieChart"),
+      {
+        type: "pie",
+        data: {
+          labels,
+          datasets: [
+          {
+            data: values,
+            backgroundColor: [
+            "#2ecc71",
+            "#ff7f50",
+            "#3498db",
+            "#f1c40f",
+            "#9b59b6",
+            "#00cfe8"
+            ]
+          }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: "right",
+              labels: {
+                generateLabels(chart) {
+                  return chart.data.labels.map((label, i) => {
+                    const value = chart.data.datasets[0].data[i];
+                    const percent =
+                    total > 0 ? ((value / total) * 100).toFixed(2) : 0;
+                    
+                    return {
+                      text: `${label} (${percent}%)`,
+                      fillStyle:
+                      chart.data.datasets[0].backgroundColor[i]
+                    };
+                  });
+                }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => `$ ${ctx.raw.toLocaleString()}`
+              }
+            }
+          }
+        }
+      }
+      );
+    })
+    .catch(err => console.error("Top expenses error:", err.message));
+  }
+  
+  
+  
+  let categoryCreditDebitChart1;
+  
+  function loadCategoryCreditDebit1() {
+    const filters = getIncomeFilters1();
+    
+    fetch(`${API_BASE}/v1/dashboard/cash-flow-category`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(buildPayload(filters))
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Unauthorized");
+      return res.json();
+    })
+    .then(data => {
+      if (!Array.isArray(data.response)) return;
+      
+      const rows = data.response.map(d => ({
+        month: d.month,
+        category: d.merchant_category.trim(),
+        credit: Number(d.monthly_credit) || 0,
+        debit: Number(d.monthly_debit) || 0
+      }));
+      
+      // unique months (sorted)
+      const months = [...new Set(rows.map(r => r.month))].sort(
+      (a, b) => new Date(a) - new Date(b)
+      );
+      
+      // unique categories
+      const categories = [...new Set(rows.map(r => r.category))];
+      
+      // unique color per category
+      const colorMap = {};
+      categories.forEach((c, i) => {
+        colorMap[c] = `hsl(${(i * 360) / categories.length}, 65%, 55%)`;
+      });
+      
+      const datasets = [];
+      
+      categories.forEach(category => {
+        // DEBIT (negative)
+        datasets.push({
+          label: `${category} – Debit`,
+          data: months.map(m => {
+            const row = rows.find(
+            r => r.month === m && r.category === category
+            );
+            return row ? -row.debit : 0;
+          }),
+          backgroundColor: colorMap[category],
+          stack: category
+        });
+        
+        // CREDIT (positive)
+        datasets.push({
+          label: `${category} – Credit`,
+          data: months.map(m => {
+            const row = rows.find(
+            r => r.month === m && r.category === category
+            );
+            return row ? row.credit : 0;
+          }),
+          backgroundColor: colorMap[category],
+          stack: category
+        });
+      });
+      
+      if (categoryCreditDebitChart)
+      categoryCreditDebitChart.destroy();
+      
+      categoryCreditDebitChart = new Chart(
+      document.getElementById("categoryCreditDebitChart"),
+      {
+        type: "bar",
+        data: {
+          labels: months,
+          datasets
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              stacked: true
+            },
+            y: {
+              stacked: true,
+              title: {
+                display: true,
+                text: "Amount ($)"
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: {
+                filter: item =>
+                item.text.includes("Credit") // cleaner legend
+              },
+              position: "bottom"
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const val = Math.abs(ctx.raw);
+                  const type = ctx.raw < 0 ? "Debit" : "Credit";
+                  return `${ctx.dataset.stack} – ${type}: $${val.toLocaleString()}`;
+                }
+              }
+            }
+          }
+        }
+      }
+      );
+    })
+    
+    
+    .catch(err =>
+    console.error("Category Credit/Debit error:", err.message)
+    );
+  }
+  
+  let categoryCreditDebitChart;
+  
+  function loadCategoryCreditDebit() {
+    const filters = getIncomeFilters1();
+    
+    fetch(`${API_BASE}/v1/dashboard/cash-flow-category`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(buildPayload(filters))
+    })
+    .then(res => {
+      if (!res.ok) throw new Error("Unauthorized");
+      return res.json();
+    })
+    .then(data => {
+      if (!Array.isArray(data.response)) return;
+      
+      // Prepare data
+      const rows = data.response.map(d => ({
+        month: d.month,
+        category: d.merchant_category.trim(),
+        credit: Number(d.monthly_credit) || 0,
+        debit: Number(d.monthly_debit) || 0
+      }));
+      
+      // unique months (sorted)
+      const months = [...new Set(rows.map(r => r.month))].sort(
+      (a, b) => new Date(a) - new Date(b)
+      );
+      
+      // unique categories
+      const categories = [...new Set(rows.map(r => r.category))];
+      
+      // unique color per category
+      const colorMap = {};
+      categories.forEach((c, i) => {
+        colorMap[c] = `hsl(${(i * 360) / categories.length}, 65%, 55%)`;
+      });
+      
+      // Build datasets for Chart.js
+      const datasets = [];
+      
+      categories.forEach(category => {
+        // DEBIT (negative for stacked)
+        datasets.push({
+          label: `${category} – Debit`,
+          data: months.map(m => {
+            const row = rows.find(
+            r => r.month === m && r.category === category
+            );
+            return row ? -row.debit : 0;
+          }),
+          backgroundColor: colorMap[category],
+          stack: category
+        });
+        
+        // CREDIT (positive)
+        datasets.push({
+          label: `${category} – Credit`,
+          data: months.map(m => {
+            const row = rows.find(
+            r => r.month === m && r.category === category
+            );
+            return row ? row.credit : 0;
+          }),
+          backgroundColor: colorMap[category],
+          stack: category
+        });
+      });
+      
+      // Destroy previous chart if exists
+      if (categoryCreditDebitChart)
+      categoryCreditDebitChart.destroy();
+      
+      // Render Chart
+      categoryCreditDebitChart = new Chart(
+      document.getElementById("categoryCreditDebitChart"),
+      {
+        type: "bar",
+        data: {
+          labels: months,
+          datasets
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { stacked: true },
+            y: {
+              stacked: true,
+              title: { display: true, text: "Amount ($)" }
+            }
+          },
+          plugins: {
+            legend: {
+              // labels: {
+              //   filter: item =>
+              //   item.text.includes("Credit") // one legend per category
+              // },
+              labels: {
+              generateLabels: (chart) => {
+                const seen = new Set();
+                const labels = [];
+
+                Chart.defaults.plugins.legend.labels
+                  .generateLabels(chart)
+                  .forEach(item => {
+                    // remove "Credit" or "Debit"
+                    const cleanText = item.text.replace(/ ?-? ?(Credit|Debit)/i, '');
+                    
+                    // only add if we haven't seen this category yet
+                    if (!seen.has(cleanText)) {
+                      seen.add(cleanText);
+                      labels.push({
+                        ...item,
+                        text: cleanText
+                      });
+                    }
+                  });
+
+                return labels;
+              }
+            },
+
+
+              position: "bottom"
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const val = Math.abs(ctx.raw);
+                  const type = ctx.raw < 0 ? "Debit" : "Credit";
+                  return `${ctx.dataset.stack} – ${type}: $${val.toLocaleString()}`;
+                }
+              }
+            }
+          }
+        }
+      }
+      );
+      
+      // ===== Totals per category =====
+      const categoryTotals = {};
+      
+      categories.forEach(category => {
+        const catRows = rows.filter(r => r.category === category);
+        const totalCredit = catRows.reduce((sum, r) => sum + r.credit, 0);
+        const totalDebit = catRows.reduce((sum, r) => sum + r.debit, 0);
+        
+        categoryTotals[category] = {
+          credit: totalCredit,
+          debit: totalDebit
+        };
+      });
+      
+      // Render totals in HTML
+      const totalsContainer = document.getElementById("totalsByCategory");
+      totalsContainer.innerHTML = ""; // clear previous
+      
+      categories.forEach(category => {
+        const totals = categoryTotals[category];
+        const div = document.createElement("div");
+        div.style.marginBottom = "8px";
+        div.innerHTML = `
+          <span style="font-weight: bold; color: ${colorMap[category]};">${category}</span><br>
+          <span class="green">Total Credit: $${totals.credit.toLocaleString()}</span><br>
+          <span class="red">Total Debit: $${totals.debit.toLocaleString()}</span>
+        `;
+        totalsContainer.appendChild(div);
+      });
+    })
+    .catch(err =>
+    console.error("Category Credit/Debit error:", err.message)
+    );
+  }
+  
+  
+  
+  /* ===========================
+  FILTER EVENTS
+  =========================== */
+  document
+  .getElementById("payableYear")
+  .addEventListener("change", loadIncomeExpense);
+  document
+  .getElementById("payableQuarter")
+  .addEventListener("change", loadIncomeExpense);
+  
+  document
+  .getElementById("payableYear")
+  .addEventListener("change", loadTopExpenses);
+  document
+  .getElementById("payableQuarter")
+  .addEventListener("change", loadTopExpenses);
+  
+  
+  document
+  .getElementById("payableYear")
+  .addEventListener("change", loadCategoryCreditDebit);
+  document
+  .getElementById("payableQuarter")
+  .addEventListener("change", loadCategoryCreditDebit);
+  // document
+  //   .getElementById("incomeYear")
+  //   .addEventListener("change", loadIncomeExpense);
+  // document
+  //   .getElementById("incomeQuarter")
+  //   .addEventListener("change", loadIncomeExpense);
+  
+  // document
+  //   .getElementById("expenseYear")
+  //   .addEventListener("change", loadTopExpenses);
+  // document
+  //   .getElementById("expenseQuarter")
+  //   .addEventListener("change", loadTopExpenses);
+  
+  
+  // document
+  //   .getElementById("incomeYear1")
+  //   .addEventListener("change", loadCategoryCreditDebit);
+  // document
+  //   .getElementById("incomeQuarter1")
+  //   .addEventListener("change", loadCategoryCreditDebit);
+  
+  /* ===========================
+  INITIAL LOAD
+  =========================== */
+  loadIncomeExpense();
+  loadTopExpenses();
+  loadCategoryCreditDebit()
+  // Load on start
+  loadData();
+  // Load on start
+  loadPayableData();
+  loadPayableAnalysisData();
+  
+  // Reload on filter change
+  document.getElementById('payableYear').addEventListener('change', loadPayableData);
+  document.getElementById('payableQuarter').addEventListener('change', loadPayableData);
+  
+  // Reload on filter change
+  document.getElementById('payableYear').addEventListener('change', loadPayableAnalysisData);
+  document.getElementById('payableQuarter').addEventListener('change', loadPayableAnalysisData);
+  // Reload on filter change
+  document.getElementById('payableYear').addEventListener('change', loadData);
+  document.getElementById('payableQuarter').addEventListener('change', loadData);
+</script>
+
+<script>
+   document.getElementById('notInOverdueLink').href =
+    `${API_BASE}/app/invoicesaging?range=not_in_overdue`;
+  document.getElementById('currentLink').href =
+    `${API_BASE}/app/invoicesaging?range=current`;
+</script>
+
+<script>
+   document.getElementById('approvedLink').href =
+    `${API_BASE}/app/current-payments?range=approved`;
+  document.getElementById('pendingLink').href =
+    `${API_BASE}/app/current-payments?range=pending`;
+</script>
+
+<script>
+async function loadCurrentPaymentChart() {
+  const response = await fetch(`${API_BASE}/v1/dashboard/current-payable`, {
+    method: "POST",
+    headers: {
+      "Accept": "application/json",
+        'Authorization': `Bearer ${localStorage.getItem('token') || getCookie('access_token')}`
+    }
+  });
+
+  const data = await response.json();
+  document.getElementById("totalApproved").innerText =
+  `${data.response.approved.total.toLocaleString()}`;
+
+document.getElementById("totalPending").innerText =
+  `${data.response.pending.total.toLocaleString()}`;
+
+  
+
+  const ctx = document
+    .getElementById("currentPaymentChart")
+    .getContext("2d");
+
+  new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      datasets: [
+        // 🔹 OUTER RING
+        {
+          data: [
+            ...data.response.approved.by.map(x => x.total),
+            ...data.response.pending.by.map(x => x.total)
+          ],
+          backgroundColor: [
+            "#4CAF50", "#81C784",
+            "#FF9800", "#FFB74D"
+          ],
+          radius: "90%",
+          cutout: "50%"
+        },
+
+        // 🔸 INNER RING
+        {
+          data: [
+            data.response.approved.total,
+            data.response.pending.total
+          ],
+          backgroundColor: [
+            "#2E7D32",
+            "#EF6C00"
+          ],
+          radius: "70%",
+          cutout: "45%"
+        }
+      ]
+    },
+
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: "bottom"
+        },
+
+        tooltip: {
+          callbacks: {
+            title(context) {
+              const { datasetIndex, dataIndex } = context[0];
+
+              if (datasetIndex === 1) {
+                return dataIndex === 0
+                  ? "Approved Payment"
+                  : "Pending Payment";
+              }
+
+              const approvedCount = data.response.approved.by.length;
+              return dataIndex < approvedCount
+                ? "Approved Payments"
+                : "Pending Payments";
+            },
+
+            beforeBody(context) {
+              if (context[0].datasetIndex === 0) {
+                const approvedCount = data.response.approved.by.length;
+                return context[0].dataIndex < approvedCount
+                  ? "Approved By"
+                  : "Payment By";
+              }
+              return "";
+            },
+
+            label(context) {
+              const { datasetIndex, dataIndex, raw } = context;
+
+              if (datasetIndex === 1) {
+                return `RM ${raw.toLocaleString()}`;
+              }
+
+              const approvedCount = data.response.approved.by.length;
+              const user =
+                dataIndex < approvedCount
+                  ? data.response.approved.by[dataIndex]
+                  : data.response.pending.by[dataIndex - approvedCount];
+
+              return `${user.name}: RM ${raw.toLocaleString()}`;
+            }
+          }
+        }
+      }
+    },
+
+    plugins: [{
+      // 🔹 CENTER TEXT
+      id: "centerText",
+      beforeDraw(chart) {
+        const { width, height, ctx } = chart;
+
+        ctx.restore();
+        ctx.font = "bold 16px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        ctx.fillText(
+          `₹${data.response.total.toLocaleString()}`,
+          width / 2,
+          height / 2
+        );
+
+        ctx.font = "12px Arial";
+        ctx.fillText(
+          "Total Payment",
+          width / 2,
+          height / 2 + 20
+        );
+
+        ctx.save();
+      }
+    }]
+  });
+}
+
+// 🔥 Load chart on page load
+loadCurrentPaymentChart();
+</script>
+

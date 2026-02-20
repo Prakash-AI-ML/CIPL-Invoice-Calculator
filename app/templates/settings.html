@@ -1,0 +1,115 @@
+
+  <style>
+    .card:hover {
+      transform: translateY(-5px);
+      transition: 0.2s;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+    }
+    .mdi1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      color: #0d6efd;
+    }
+  </style>
+
+  <h2 class="mb-4">Settings</h2> 
+  <div class="row g-3">  
+
+    {% set settings_buttons = request.state.user.menus['settings']['buttons'] %}
+    {% if 'users_view' in settings_buttons | map(attribute='button_name') | list %}
+    <div class="col-md-3 col-sm-6">
+      <a  href="#" onclick="navigate('/app/settings/users_list'); return false;" class="text-decoration-none">
+        <div class="card text-center shadow-sm" style="padding: 10px;">
+          <div class="card-body"  style="padding: 10px;">
+            <i class="mdi1 mdi mdi-account-multiple" style="font-size: 40px;color: #844fc1;"></i>
+            <h5 class="card-title mt-2" style="font-size: 20px;color: #844fc1;">Users</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Role -->
+    {% set settings_buttons = request.state.user.menus['settings']['buttons'] %}
+    {% if 'roles_view' in settings_buttons | map(attribute='button_name') | list %}
+    <div class="col-md-3 col-sm-6">
+      <a  href="#" onclick="navigate('/app/settings/role'); return false;" class="text-decoration-none">
+        <div class="card text-center shadow-sm" style="padding: 10px;">
+          <div class="card-body"  style="padding: 10px;">
+            <i class="mdi1 mdi mdi-account-key" style="font-size: 40px;color: #844fc1;"></i>
+            <h5 class="card-title mt-2" style="font-size: 20px;color: #844fc1;">Role</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Clients -->
+    {% set settings_buttons = request.state.user.menus['settings']['buttons'] %}
+    {% if 'clients_view' in settings_buttons | map(attribute='button_name') | list %}
+    <div class="col-md-3 col-sm-6">
+      <a  href="#" onclick="navigate('/app/settings/clients'); return false;" class="text-decoration-none">
+        <div class="card text-center shadow-sm" style="padding: 10px;">
+          <div class="card-body"  style="padding: 10px;">
+            <i class="typcn typcn-group menu-icon" style="font-size: 40px;color: #844fc1;"></i>
+            <h5 class="card-title mt-2" style="font-size: 20px;color: #844fc1;">Clients</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Category -->
+    {% set settings_buttons = request.state.user.menus['settings']['buttons'] %}
+    {% if 'categories_view' in settings_buttons | map(attribute='button_name') | list %}
+    <div class="col-md-3 col-sm-6">
+      <a  href="#" onclick="navigate('/app/settings/category'); return false;" class="text-decoration-none">
+        <div class="card text-center shadow-sm" style="padding: 10px;">
+          <div class="card-body"  style="padding: 10px;">
+            <i class="mdi1 mdi mdi-store" style="font-size: 40px;color: #844fc1;"></i>
+            <h5 class="card-title mt-2" style="font-size: 20px;color: #844fc1;">Category</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
+
+    <!-- Menu -->
+    <div class="col-md-3 col-sm-6 hide">
+      <a href="#" onclick="navigate('/app/menu'); return false;" class="text-decoration-none">
+        <div class="card text-center shadow-sm p-4">
+          <div class="card-body">
+            <i class="mdi1 mdi mdi-menu"></i>
+            <h5 class="card-title mt-2">Menu</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+
+     <!-- Button -->
+    <div class="col-md-3 col-sm-6 hide">
+      <a href="#" onclick="navigate('/app/button'); return false;" class="text-decoration-none">
+        <div class="card text-center shadow-sm p-4">
+          <div class="card-body">
+            <i class="mdi1 mdi mdi-toggle-switch"></i>
+            <h5 class="card-title mt-2">Button</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Permission -->
+    <div class="col-md-3 col-sm-6 hide">
+      <a href="permission.html" class="text-decoration-none">
+        <div class="card text-center shadow-sm p-4">
+          <div class="card-body">
+            <i class="mdi1 mdi mdi-check-decagram"></i>
+            <h5 class="card-title mt-2">Permission</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+
+   
+
+  </div>

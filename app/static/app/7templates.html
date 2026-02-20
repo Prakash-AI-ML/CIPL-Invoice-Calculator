@@ -1,0 +1,1834 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    
+    <title>Statement Of Account Generator - Dropdown Selector</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- html2pdf.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<!-- html2canvas (REQUIRED for doc.html) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+
+    
+    <style>
+        body {
+            background-color: #f4f4f4;
+            font-family: 'Arial', sans-serif;
+            text-transform: uppercase;
+        }
+        
+        /* --- 1. Control Panel Styles (Hidden from PDF) --- */
+        #controls {
+            background: #fff;
+            padding: 20px;
+            margin: 30px auto 10px;
+            /* max-width: 900px; */
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        #jsonInput {
+            min-height: 150px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        /* --- Template Display Container --- */
+        #template-display-area {
+            /* max-width: 900px; */
+            margin: 0 auto;
+        }
+        
+        /* --- Global Statement Base Styles --- */
+        .statement-container {
+            background: white;
+            padding: 30px;
+            width: 100%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .statement-container * {
+            font-size: 12px !important;
+            line-height: 1.3;
+        }
+        
+        .statement-container .header-title {
+            font-size: 20px !important;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .statement-container .currency-cell {
+            text-align: right;
+        }
+        
+        .statement-container .total {
+            font-weight: bold;
+        }
+        
+        .statement-container table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+        
+        .statement-container th,
+        .statement-container td {
+            padding: 5px;
+        }
+        
+        .statement-container .footer-note {
+            margin-top: 30px;
+            text-align: center;
+            font-style: italic;
+        }
+        
+        -button-container {
+            margin-top: 20px;
+        }
+        
+        /* --- TEMPLATE 1: LEDGER (ORIGINAL) --- */
+        #statement-content-1 table {
+            border: 1px solid darkgrey;
+        }
+        
+        #statement-content-1 th,
+        #statement-content-1 td {
+            border: 1px solid darkgrey;
+        }
+        
+        #statement-content-1 .aging-table td {
+            text-align: center !important;
+            font-weight: bold;
+        }
+        
+        /* --- TEMPLATE 2: (Clean Lines) --- */
+        #statement-content-2 th {
+            background-color: #f7f7f7;
+            border-bottom: 1px solid #ccc !important;
+            text-align: left !important;
+        }
+        
+        #statement-content-2 td {
+            border-bottom: 1px dotted #eee;
+        }
+        
+        #statement-content-2 .summary-block {
+            padding: 10px;
+            background-color: #fcfcfc;
+            border: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+        
+        #statement-content-2 .total-row td {
+            border-top: 2px solid #333;
+            border-bottom: none;
+            font-size: 14px !important;
+        }
+        
+        #statement-content-2 .aging-table th,
+        #statement-content-2 .aging-table td {
+            border: none;
+            text-align: center;
+        }
+        
+        /* --- TEMPLATE 3: SUMMARY (High Contrast) --- */
+        #statement-content-3 .summary-container {
+            background-color: #e6f7ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        #statement-content-3 .aging-section {
+            background-color: #fff3e6;
+            padding: 5px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        
+        #statement-content-3 .aging-table {
+            border: none;
+        }
+        
+        #statement-content-3 #total-balance-3 {
+            font-size: 24px !important;
+            font-weight: bold;
+            color: #cc0000;
+        }
+        
+        #statement-content-3 .transaction-table th {
+            background-color: #333;
+            color: white;
+            text-align: center;
+        }
+        
+        #statement-content-3 .transaction-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        #statement-content-3 .aging-table th,
+        #statement-content-3 .aging-table td {
+            border: none;
+        }
+        
+        /* --- TEMPLATE 1: customer/vendor styling --- */
+        #statement-content-1 .customer-info-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 5px;
+        }
+        
+        #statement-content-1 #customer-info-content-1 {
+            padding: 5px 0px;
+            border: 1px dashed #ccc;
+        }
+        
+        /* --- TEMPLATE 2: customer --- */
+        #statement-content-2 #customer-info-content-2 {
+            font-size: 12px !important;
+            color: #007bff;
+            padding: 5px 10px;
+            text-align: center;
+            background-color: #e9f7ff;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        /* --- TEMPLATE 3: customer --- */
+        #statement-content-3 #customer-info-content-3 {
+            padding: 0;
+            margin-bottom: 5px;
+            font-size: 12px !important;
+            border-bottom: 2px solid #cc0000;
+            padding-bottom: 3px;
+            color: #333;
+        }
+        
+        th,
+        td {
+            text-align: center !important;
+        }
+        
+        .hide {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    
+    <div class="button-tab-container mb-4 " style="justify-content: center;">
+        <button class="btn btn-outline-primary switchTemplate1  tab-btn active" onclick="switchTemplate(1)">1. LEDGER</button>
+        <button class="btn btn-outline-primary switchTemplate2 tab-btn" onclick="switchTemplate(2)">2. ACCOUNT</button>
+        <button class="btn btn-outline-primary switchTemplate3 tab-btn" onclick="switchTemplate(3)">3. SUMMARY</button>
+        <button class="btn btn-outline-primary switchTemplate4 tab-btn" onclick="switchTemplate(4)">4. SUMMARY</button>
+        <button class="btn btn-outline-primary switchTemplate5 tab-btn" onclick="switchTemplate(5)">5. SUMMARY</button>
+        <button class="btn btn-outline-primary switchTemplate6 tab-btn" onclick="switchTemplate(6)">6. SUMMARY</button>
+        <button class="btn btn-outline-primary switchTemplate7 tab-btn" onclick="switchTemplate(7)">7. SUMMARY</button>
+    </div>
+    
+    <style>
+        .button-tab-container {
+            display: flex;
+            
+            gap: 0;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .tab-btn {
+            border: none;
+            border-bottom: 3px solid transparent;
+            border-radius: 0;
+            background: transparent;
+            color: #6c757d;
+            font-weight: 500;
+            padding: 10px 16px;
+            margin: 0;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn:hover {
+            background: #f8f9fa;
+            color: #0d6efd;
+        }
+        
+        .tab-btn.active {
+            color: #0d6efd;
+            border-bottom-color: #0d6efd;
+            background: transparent;
+        }
+    </style>
+    
+    
+    <div id="controls hide">
+        <h2 class="mb-3 hide"> Statement Of Account Generator</h2>
+        
+        <!-- keep hidden JSON (for save) if you still need it -->
+        <textarea name="jsonInput" class="form-control mb-3 hide"></textarea>
+        
+        <input type="file" id="fileUploader" accept=".xlsx, .xls, .csv" class="form-control mb-3 hide">
+        
+        <div class="row align-items-center mb-3 hide">
+            <div class="col-md-4 hide">
+                <label for="templateSelector" class="form-label">Select Template:</label>
+                <select id="templateSelector" class="form-select" onchange="displaySelectedTemplate()">
+                    <option value="1" >1. LEDGER STATEMENT</option>
+                    <option value="2" >2. ACCOUNT STATEMENT</option>
+                    <option value="3" >3. ACCOUNT SUMMARY</option>
+                    <option value="4" >4. ACCOUNT SUMMARY</option>
+                    <option value="5" >5. ACCOUNT SUMMARY</option>
+                    <option value="6" >6. ACCOUNT SUMMARY</option>
+                    <option value="7" >7. ACCOUNT SUMMARY</option>
+                </select>
+            </div>
+            <div class="col-md-4 hide">
+                <!-- you can change this back to saveData() if needed -->
+                <button class="btn btn-success mt-4 saveData" onclick="saveData()" style="width:100%;">Save
+                    Data</button>
+                </div>
+                <div class="col-md-4 pdf-button-container hide">
+                    <button id="pdfButton" class="btn btn-primary" onclick="generatePDFFromCurrent()"
+                    style="width:100%;">Generate PDF</button>
+                </div>
+            </div>
+            
+            <div id="jsonHeader" class="mb-2" style="display:none;">Structured JSON Data:</div>
+            <textarea id="jsonInput"
+            style="width:100%;display:none;">Upload a file to see the structured JSON output here.</textarea>
+            
+            <p id="message" class="mt-3 text-center " style="display:none;"></p>
+        </div>
+        
+        
+        <div id="template-display-area">
+            
+            <!-- ================= TEMPLATE 1 ================= -->
+            <div id="statement-content-1" class="statement-container" style="display:block;">
+                
+                <div class="header-title" id="title-1"></div>
+                
+                <div class="row">
+                    <div class="col-6 company-info">
+                        <div id="customer-info-content-1" class="mb-2" style="font-size:14px !important;">
+                            <p><b id="t1_customer_name"></b></p>
+                            <p id="t1_customer_address"></p>
+                        </div>
+                        <div class="customer-info-title">Customer Details</div>
+                        <div id="company-info-content-1" class="company-info">
+                            <p><b id="t1_vendor_name"></b></p>
+                            <p id="t1_vendor_address"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="col-6" style="margin-top:-12px !important;">
+                        <table class="table mb-1">
+                            <tbody>
+                                <tr>
+                                    <td>Period</td>
+                                    <td id="period-display-1" class="currency-cell"></td>
+                                </tr>
+                                <tr>
+                                    <td>Total Debit</td>
+                                    <td id="total-debit-1" class="currency-cell"></td>
+                                </tr>
+                                <tr>
+                                    <td>Total Credit</td>
+                                    <td id="total-credit-1" class="currency-cell"></td>
+                                </tr>
+                                <tr>
+                                    <td><b>Balance</b></td>
+                                    <td id="total-balance-1" class="currency-cell total"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <table class="table aging-table mb-0" style="width: 100%;text-align: center;">
+                            <thead>
+                                <tr>
+                                    <th>CUST ID</th>
+                                    <th>TERM</th>
+                                    <th>MONTH</th>
+                                    <th>PAGE</th>
+                                    <th>DATE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td id="summary-customer-id-1"></td>
+                                    <td id="summary-term-1"></td>
+                                    <td id="summary-month-1"></td>
+                                    <td id="summary-page-1"></td>
+                                    <td id="summary-date-1"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Reference</th>
+                            <th>Description</th>
+                            <th>Debit</th>
+                            <th>Credit</th>
+                            <th>Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-data-1">
+                        <!-- JS rows -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="6" id="t1_total_amount_text"></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="5">Total Outstanding Balance</td>
+                            <td id="grand-total-footer-1" class="currency-cell total"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                
+                <h6 style="margin-top: 10px;">Account Aging Summary</h6>
+                <div id="aging-table-1" class="aging-section"></div>
+                <div class="footer-note">Payment requested. Report discrepancies within 10 days.</div>
+            </div>
+            
+            <!-- ================= TEMPLATE 2 ================= -->
+            <div id="statement-content-2" class="statement-container minimalist-statement" style="display:none;">
+                <div class="header-title" style="color:#007bff;" id="title-2"></div>
+                
+                <div class="summary-block">
+                    <!-- CUSTOMER -->
+                    <div id="customer-info-content-2" class="mb-2 total">
+                        <p><b id="t2_customer_name"></b></p>
+                        <p id="t2_customer_address"></p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <!-- VENDOR -->
+                            <div id="company-info-content-2" class="mb-2" style="margin-top: 15px;">
+                                <p><b id="t2_vendor_name"></b></p>
+                                <p id="t2_vendor_address"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table summary-table mb-1">
+                                <tbody>
+                                    <tr>
+                                        <td>Statement Date:</td>
+                                        <td id="summary-date-2" style="text-align: right;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Statement Period:</td>
+                                        <td id="period-display-2" style="text-align: right;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <table class="table summary-table mb-1">
+                                <tbody>
+                                    <tr>
+                                        <td><b>TOTAL DEBIT</b></td>
+                                        <td id="total-debit-2" class="currency-cell total"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>TOTAL CREDIT</b></td>
+                                        <td id="total-credit-2" class="currency-cell total"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><b>OUTSTANDING BALANCE</b></td>
+                                        <td id="total-balance-2" class="currency-cell total"
+                                        style="font-size: 14px !important;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <h6 style="margin-top: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Transaction History</h6>
+                <table class="table transaction-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Ref No</th>
+                            <th>Description</th>
+                            <th class="currency-cell">Debit</th>
+                            <th class="currency-cell">Credit</th>
+                            <th class="currency-cell">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-data-2">
+                        <!-- JS rows -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="6" id="t2_total_amount_text"></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="5" class="total" style="text-align: right;">Closing Balance</td>
+                            <td id="grand-total-footer-2" class="currency-cell total"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                
+                <h6 style="margin-top: 15px;">Account Aging Summary</h6>
+                <div id="aging-table-2" class="aging-section"></div>
+                <div class="footer-note">Thank you for your business.</div>
+            </div>
+            
+            <!-- ================= TEMPLATE 3 ================= -->
+            <div id="statement-content-3" class="statement-container executive-statement" style="display:none;">
+                <div class="header-title" style="color:#cc0000;" id="title-3"></div>
+                
+                <div class="summary-container">
+                    <!-- CUSTOMER -->
+                    <div id="customer-info-content-3" class="mb-1 total" style="font-size: 14px !important; color: #333;">
+                        <p><b id="t3_customer_name"></b></p>
+                        <p id="t3_customer_address"></p>
+                    </div>
+                    <!-- VENDOR -->
+                    <div id="company-info-content-3" class="mb-2">
+                        <p><b id="t3_vendor_name"></b></p>
+                        <p id="t3_vendor_address"></p>
+                    </div>
+                    
+                    <table class="table mb-1" style="border: none;">
+                        <tbody>
+                            <tr>
+                                <td style="width: 50%; padding: 0;">
+                                    Statement Date:
+                                    <strong id="summary-date-3"></strong>
+                                </td>
+                                <td style="width: 50%; padding: 0; text-align: right;">
+                                    Customer ID:
+                                    <strong id="summary-customer-id-3"></strong>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <hr style="margin: 5px 0; border-top: 2px solid #a0a0a0;">
+                    <div class="text-center">
+                        <p style="font-size: 14px !important; margin-bottom: 0;"><b>TOTAL OUTSTANDING BALANCE</b></p>
+                        <p id="total-balance-3" class="currency-cell total" style="margin-top: -5px;"></p>
+                    </div>
+                </div>
+                
+                <h6 style="margin-top: 10px; color:#c06000;">Account Aging Breakdown</h6>
+                <div id="aging-table-3" class="aging-section"></div>
+                
+                <h6 style="margin-top: 10px; border-bottom: 1px solid #ccc; padding-bottom: 5px;">Detailed Transactions</h6>
+                <table class="table transaction-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Ref</th>
+                            <th>Description</th>
+                            <th class="currency-cell">Debit</th>
+                            <th class="currency-cell">Credit</th>
+                            <th class="currency-cell">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-data-3">
+                        <!-- JS rows -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="6" id="t3_total_amount_text"></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="5" class="total" style="text-align: right;">Closing Balance</td>
+                            <td id="grand-total-footer-3" class="currency-cell total"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                
+                <div class="footer-note">All amounts are in Ringgit Malaysia (RM).</div>
+            </div>
+            
+            <!-- ================= TEMPLATE 4 ================= -->
+            <div id="statement-content-4" class="statement-container" style="display:none;">
+                <div class="header-title" id="title-4"></div>
+                <div class="row">
+                    <div class="col-7 company-info">
+                        <div class="mb-2" style="font-size:14px !important;">
+                            <p><b id="t4_customer_name"></b></p>
+                            <p id="t4_customer_address"></p>
+                        </div>
+                        <div class="company-info">
+                            <p><b id="t4_vendor_name"></b></p>
+                            <p id="t4_vendor_address"></p>
+                        </div>
+                    </div>
+                    <div class="col-5" style="margin-top:-12px !important;">
+                        <table class="table mb-1">
+                            <tbody>
+                                <tr>
+                                    <td>Our Ref</td>
+                                    <td id="t4_period" class="currency-cell"></td>
+                                </tr>
+                                <tr>
+                                    <td>Date</td>
+                                    <td id="t4_date" class="currency-cell"></td>
+                                </tr>
+                                <tr>
+                                    <td>Total</td>
+                                    <td id="t4_total_amount" class="currency-cell total"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-12 text-center">
+                        <h5>STATEMENT OF ACCOUNT</h5>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>BIL</th>
+                            <th>DESCRIPTION</th>
+                            <th>PRICE</th>
+                            <th>TOTAL</th>
+                            <th>REMARK</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-data-4">
+                        <!-- JS rows -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" class="text-center fw-bold" id="t4_total_amount_text"></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="3">GRAND TOTAL (RM)</td>
+                            <td colspan="2" id="grand-total-footer-4_1" class="currency-cell total"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <div class="footer-note text-end mt-3">
+                    Term: <span id="t4_term"></span> | Payment requested within 10 days.
+                </div>
+            </div>
+            
+            <!-- ================= TEMPLATE 5 ================= -->
+            <div id="statement-content-5" class="statement-container" style="display:none;">
+                <div class="header-title" id="title-5"></div>
+                <div class="row">
+                    <div class="col-8 company-info">
+                        <div class="mb-2" style="font-size:14px !important;">
+                            <p><b id="t5_customer_name"></b></p>
+                            <p id="t5_customer_address"></p>
+                        </div>
+                        <div class="company-info">
+                            <p><b id="t5_vendor_name"></b></p>
+                            <p id="t5_vendor_address"></p>
+                        </div>
+                    </div>
+                    <div class="col-4 text-end">
+                        <small>Page: <span id="t5_page"></span></small>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-12 text-center">
+                        <h6>Statement as at <span id="t5_period"></span></h6>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Invoice Number</th>
+                            <th>Debit</th>
+                            <th>Credit</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-data-5">
+                        <!-- JS rows -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" id="t5_total_amount_text"></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="4"></td>
+                            <td id="grand-total-footer-5_2" class="currency-cell total"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <h6 class="mt-3">Ageing Analysis</h6>
+                <div id="aging-table-5" class="aging-section">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>>121</th>
+                                <th>91-120</th>
+                                <th>61-90</th>
+                                <th>31-60</th>
+                                <th>Current</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td id="t5_total_debit"></td>
+                                <td id="t5_total_amount"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="footer-note">
+                    We shall be grateful if you will let us have your payment as soon as possible.
+                </div>
+            </div>
+            
+            <!-- ================= TEMPLATE 6 ================= -->
+            <div id="statement-content-6" class="statement-container" style="display:none;">
+                <div class="header-title" id="title-6"></div>
+                <div class="row">
+                    <div class="col-6 company-info">
+                        <div class="mb-2" style="font-size:14px !important;">
+                            <p><b id="t6_customer_name"></b></p>
+                            <p id="t6_customer_address"></p>
+                        </div>
+                        <div class="company-info">
+                            <p><b id="t6_vendor_name"></b></p>
+                            <p id="t6_vendor_address"></p>
+                        </div>
+                    </div>
+                    <div class="col-6" style="margin-top:-12px !important;">
+                        <table class="table mb-1">
+                            <tbody>
+                                <tr>
+                                    <td>Date</td>
+                                    <td id="t6_date" class="currency-cell"></td>
+                                </tr>
+                                <tr>
+                                    <td>Account</td>
+                                    <td id="t6_customer_id" class="currency-cell"></td>
+                                </tr>
+                                <tr>
+                                    <td>Stmt No</td>
+                                    <td id="t6_page" class="currency-cell"></td>
+                                </tr>
+                                <tr>
+                                    <td>Balance</td>
+                                    <td id="t6_total_amount" class="currency-cell total"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Inv No</th>
+                            <th>Date</th>
+                            <th>Remark</th>
+                            <th>Open Amt</th>
+                            <th>Disc</th>
+                            <th>Pmt Rcvd</th>
+                            <th>Adj</th>
+                            <th>Outstanding</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-data-6">
+                        <!-- JS rows -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="8" id="t6_total_amount_text"></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="7"></td>
+                            <td id="grand-total-footer-6_3" class="currency-cell total"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <div class="footer-note">
+                    MYR MALAYSIAN RINGGIT <span id="t6_total_amount_footer"></span> ONLY
+                </div>
+            </div>
+            
+            <!-- ================= TEMPLATE 7 ================= -->
+            <div id="statement-content-7" class="statement-container" style="display:none;">
+                <div class="header-title" id="title-7"></div>
+                <div class="row">
+                    <div class="col-6 company-info">
+                        <div class="mb-2" style="font-size:14px !important;">
+                            <p><b id="t7_customer_name"></b></p>
+                            <p id="t7_customer_address"></p>
+                        </div>
+                        <div class="customer-info-title">To:</div>
+                        <div class="company-info">
+                            <p><b id="t7_vendor_name"></b></p>
+                            <p id="t7_vendor_address"></p>
+                        </div>
+                    </div>
+                    <div class="col-6" style="margin-top:-12px !important;">
+                        <table class="table mb-1">
+                            <tbody>
+                                <tr>
+                                    <td>Account No</td>
+                                    <td id="t7_customer_id" class="currency-cell"></td>
+                                </tr>
+                                <tr>
+                                    <td>Term</td>
+                                    <td id="t7_term" class="currency-cell"></td>
+                                </tr>
+                                <tr>
+                                    <td>Date</td>
+                                    <td id="t7_date" class="currency-cell"></td>
+                                </tr>
+                                <tr>
+                                    <td>Month End</td>
+                                    <td id="t7_period" class="currency-cell"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Reference</th>
+                            <th>Debit</th>
+                            <th>Credit</th>
+                            <th>Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-data-7">
+                        <!-- JS rows -->
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="5" id="t7_total_amount_text"></td>
+                        </tr>
+                        <tr class="total-row">
+                            <td colspan="4">Total</td>
+                            <td id="grand-total-footer-7_4" class="currency-cell total"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                <h6 class="mt-3">Analysis Of Closing Balance</h6>
+                <div id="aging-table-7" class="aging-section">
+                    <table class="table table-sm mb-0">
+                        <thead>
+                            <tr>
+                                <th>Current</th>
+                                <th>30</th>
+                                <th>60</th>
+                                <th>90</th>
+                                <th>120+</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="t7_total_amount"></td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="footer-note mt-2">
+                    1. Payments after month-end appear in next statement.<br>
+                    2. No remarks within 10 days = account accepted as correct.
+                </div>
+            </div>
+            
+        </div>
+        
+        <script>
+            // =====================================================
+            // COMPLETE JS FOR ALL 7 SOA TEMPLATES - EVERPRO DATA
+            // =====================================================
+            
+            // YOUR REAL JSON DATA - EVERPRO CO.,LTD (extracted response)
+            
+            const sampleData = {
+                'client_test':"client_test",
+                "fileURL": "http://localhost/SOA/uploads/6926ba9aa82ad_1764145818.xlsx",
+                "date": "30/11/2025",
+                "month": "November 2025",
+                "page": "1",
+                "customer_id": "4000/E23",
+                "term": "",
+                "customer_name": "EVERPRO CO.,LTD",
+                "customer_address": "189/388 VILLAGE NO.5, PHARAM 2 RD, PANTHAI NORASING SUB-DISTRICT, MUANG DISTRICT, SAMUT SAKHON 74000",
+                "vendor_name": "GLOW FREIGHT SERVICES (M) SDN BHD",
+                "vendor_address": "16, JALAN ASTANA 1D/KU 2, BANDAR BUKIT RAJA 41050 KLANG, SELANGOR DARUL EHSAN, MALAYSIA TEL : 03-3362 5017    FAX : 03-3362 5027 EMAIL: accounts@glowfreight.com.my",
+                "total_amount": 339340.57,
+                "total_amount_text": "RINGGIT MALAYSIA : THREE HUNDRED THIRTY NINE THOUSAND THREE HUNDRED FORTY AND CENTS FIFTY SEVEN ONLY",
+                "total_credit": 339340.57,
+                "total_debit": 0,
+                "period": "17/04/2024 TO 08/07/2025",
+                "current": 0,
+                "month_2": 0, "month_3": 0, "month_4": 0, "month_5": 0,
+                "month_6": 0, "month_7": 0, "month_8": 0, "month_9": 0,
+                "month_10": 0, "month_11": 0,
+                "table": [
+                {"DATE": "17/04/2024", "REF NO": "MINV240301280", "DESCRIPTION": "TRANSPORTATION CHARGES", "DEBIT": null, "CREDIT": 7353.8, "BALANCE": 7353.8},
+                {"DATE": "16/05/2024", "REF NO": "MINV240501853", "DESCRIPTION": "TRANSPORTATION CHARGES", "DEBIT": null, "CREDIT": 15453.07, "BALANCE": 22806.87},
+                {"DATE": "29/06/2024", "REF NO": "MINV240501205", "DESCRIPTION": "TRANSPORTATION CHARGES", "DEBIT": null, "CREDIT": 11445.78, "BALANCE": 34252.65},
+                {"DATE": "29/06/2024", "REF NO": "MINV24060115", "DESCRIPTION": "TRANSPORTATION CHARGES", "DEBIT": null, "CREDIT": 21000.84, "BALANCE": 55253.49},
+                {"DATE": "27/07/2024", "REF NO": "MINV240701286", "DESCRIPTION": "TRANSPORTATION CHARGES", "DEBIT": null, "CREDIT": 20079.28, "BALANCE": 75332.77},
+                {"DATE": "19/08/2024", "REF NO": "MINV24080256", "DESCRIPTION": "TRANSPORTATION CHARGES", "DEBIT": null, "CREDIT": 12676.12, "BALANCE": 88008.89},
+                {"DATE": "20/09/2024", "REF NO": "MINV240301564", "DESCRIPTION": "TRANSPORTATION CHARGES", "DEBIT": null, "CREDIT": 60287.39, "BALANCE": 148296.28},
+                {"DATE": "20/11/2024", "REF NO": "MINV241101420", "DESCRIPTION": "TRANSPORTATION CHARGES", "DEBIT": null, "CREDIT": 44495.81, "BALANCE": 192792.09},
+                {"DATE": "11/12/2024", "REF NO": "MINV241201603", "DESCRIPTION": "TRANSPORTATION CHARGES", "DEBIT": null, "CREDIT": 19758.98, "BALANCE": 212551.07},
+                {"DATE": "30/12/2024", "REF NO": "MINV240301854", "DESCRIPTION": "TRANSPORTATION CHARGES", "DEBIT": null, "CREDIT": 24789.71, "BALANCE": 237340.78},
+                {"DATE": "14/04/2025", "REF NO": "EPR-2504-012", "DESCRIPTION": "SPOTMAN, SUPERVISION & COORDINATION CHARGES", "DEBIT": null, "CREDIT": 54484.36, "BALANCE": 291825.14},
+                {"DATE": "08/07/2025", "REF NO": "EPR-2507-055", "DESCRIPTION": "SPOTMAN, SUPERVISION & COORDINATION CHARGES", "DEBIT": null, "CREDIT": 47515.43, "BALANCE": 339340.57}
+                ]
+            };
+            
+            
+            // ---------- UTILITY FUNCTIONS ----------
+            function formatCurrency(value) {
+                if (value === null || value === undefined || value === '') return '0.00';
+                return parseFloat(value).toLocaleString('en-US', { 
+                    minimumFractionDigits: 2, 
+                    maximumFractionDigits: 2 
+                });
+            }
+            
+            function computeTitle(address) {
+                const lower = (address || "").toLowerCase();
+                const keywords = ["malaysia", "singapore", "thailand"];
+                const found = keywords.some(k => lower.includes(k));
+                return "Statement Of Accounts"; // Always this for Malaysia
+            }
+            
+            function setText(id, value) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value != null ? value : "";
+            }
+            
+            function fillTableRows(tbodyId, rowsBuilder) {
+                const tbody = document.getElementById(tbodyId);
+                if (!tbody) return;
+                tbody.innerHTML = "";
+                sampleData.table.forEach((txn, idx) => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = rowsBuilder(txn, idx + 1);
+                    tbody.appendChild(tr);
+                });
+                // Add total_amount_text row
+                const totalRow = document.createElement("tr");
+                totalRow.innerHTML = `<td colspan="${rowsBuilder({}).split('colspan').length > 0 ? 6 : 8}">${sampleData.total_amount_text}</td>`;
+                tbody.appendChild(totalRow);
+            }
+            
+            // ---------- TEMPLATE 1 ----------
+            function loadTemplate1() {
+                setText("title-1", computeTitle(sampleData.customer_address));
+                setText("t1_customer_name", sampleData.customer_name);
+                setText("t1_customer_address", sampleData.customer_address);
+                setText("t1_vendor_name", sampleData.vendor_name);
+                setText("t1_vendor_address", sampleData.vendor_address);
+                setText("period-display-1", sampleData.period);
+                setText("total-debit-1", "RM "+formatCurrency(sampleData.total_debit));
+                setText("total-credit-1", "RM "+formatCurrency(sampleData.total_credit));
+                setText("total-balance-1", "RM "+formatCurrency(sampleData.total_amount));
+                setText("summary-customer-id-1", sampleData.customer_id);
+                setText("summary-term-1", sampleData.term);
+                setText("summary-month-1", sampleData.month);
+                setText("summary-page-1", sampleData.page);
+                setText("summary-date-1", sampleData.date);
+                setText("grand-total-footer-1", "RM "+formatCurrency(sampleData.total_amount));
+                
+                fillTableRows("transaction-data-1", (txn) =>
+                `<td>${txn["DATE"] || ""}</td>
+         <td>${txn["REF NO"] || ""}</td>
+         <td>${txn["DESCRIPTION"] || ""}</td>
+         <td class="currency-cell">${"RM  "+formatCurrency(txn["DEBIT"])}</td>
+         <td class="currency-cell">${"RM "+formatCurrency(txn["CREDIT"])}</td>
+         <td class="currency-cell">${"RM "+formatCurrency(txn["BALANCE"])}</td>`
+                );
+            }
+            
+            // ---------- TEMPLATE 2 ----------
+            function loadTemplate2() {
+                setText("title-2", computeTitle(sampleData.customer_address));
+                setText("t2_customer_name", sampleData.customer_name);
+                setText("t2_customer_address", sampleData.customer_address);
+                setText("t2_vendor_name", sampleData.vendor_name);
+                setText("t2_vendor_address", sampleData.vendor_address);
+                setText("summary-date-2", sampleData.date);
+                setText("period-display-2", sampleData.month);
+                setText("total-debit-2", "RM "+formatCurrency(sampleData.total_debit));
+                setText("total-credit-2", "RM "+formatCurrency(sampleData.total_credit));
+                setText("total-balance-2", "RM "+formatCurrency(sampleData.total_amount));
+                setText("grand-total-footer-2", "RM "+formatCurrency(sampleData.total_amount));
+                
+                fillTableRows("transaction-data-2", (txn) =>
+                `<td>${txn["DATE"] || ""}</td>
+         <td>${txn["REF NO"] || ""}</td>
+         <td>${txn["DESCRIPTION"] || ""}</td>
+         <td class="currency-cell">${"RM  "+formatCurrency(txn["DEBIT"])}</td>
+         <td class="currency-cell">${"RM "+formatCurrency(txn["CREDIT"])}</td>
+         <td class="currency-cell">${"RM "+formatCurrency(txn["BALANCE"])}</td>`
+                );
+            }
+            
+            // ---------- TEMPLATE 3 ----------
+            function loadTemplate3() {
+                setText("title-3", computeTitle(sampleData.customer_address));
+                setText("t3_customer_name", sampleData.customer_name);
+                setText("t3_customer_address", sampleData.customer_address);
+                setText("t3_vendor_name", sampleData.vendor_name);
+                setText("t3_vendor_address", sampleData.vendor_address);
+                setText("summary-date-3", sampleData.date);
+                setText("summary-customer-id-3", sampleData.customer_id);
+                setText("total-balance-3", "RM "+formatCurrency(sampleData.total_amount));
+                setText("grand-total-footer-3", "RM "+formatCurrency(sampleData.total_amount));
+                
+                fillTableRows("transaction-data-3", (txn) =>
+                `<td>${txn["DATE"] || ""}</td>
+         <td>${txn["REF NO"] || ""}</td>
+         <td>${txn["DESCRIPTION"] || ""}</td>
+         <td class="currency-cell">${"RM  "+formatCurrency(txn["DEBIT"])}</td>
+         <td class="currency-cell">${"RM "+formatCurrency(txn["CREDIT"])}</td>
+         <td class="currency-cell">${"RM "+formatCurrency(txn["BALANCE"])}</td>`
+                );
+            }
+            
+            // ---------- TEMPLATE 4 ----------
+            function loadTemplate4() {
+                setText("title-4", computeTitle(sampleData.customer_address));
+                setText("t4_customer_name", sampleData.customer_name);
+                setText("t4_customer_address", sampleData.customer_address);
+                setText("t4_vendor_name", sampleData.vendor_name);
+                setText("t4_vendor_address", sampleData.vendor_address);
+                setText("t4_period", sampleData.period);
+                setText("t4_date", sampleData.date);
+                setText("t4_total_amount", "RM "+formatCurrency(sampleData.total_amount));
+                setText("t4_term", sampleData.term);
+                
+                fillTableRows("transaction-data-4", (txn, bil) =>
+                `<td class="text-center">${bil}</td>
+         <td>${txn["REF NO"] || ""}</td>
+         <td class="currency-cell">${"RM  "+formatCurrency(txn["DEBIT"])}</td>
+         <td class="currency-cell">${"RM "+formatCurrency(txn["BALANCE"])}</td>
+         <td>${txn["DESCRIPTION"] || ""}</td>`
+                );
+                
+                setText("grand-total-footer-4_1", "RM "+formatCurrency(sampleData.total_amount));
+            }
+            
+            // ---------- TEMPLATE 5 ----------
+            function loadTemplate5() {
+                setText("title-5", computeTitle(sampleData.customer_address));
+                setText("t5_customer_name", sampleData.customer_name);
+                setText("t5_customer_address", sampleData.customer_address);
+                setText("t5_vendor_name", sampleData.vendor_name);
+                setText("t5_vendor_address", sampleData.vendor_address);
+                setText("t5_page", sampleData.page);
+                setText("t5_period", sampleData.period);
+                setText("t5_total_debit", "RM "+formatCurrency(sampleData.total_debit));
+                setText("t5_total_amount", "RM "+formatCurrency(sampleData.total_amount));
+                setText("grand-total-footer-5_2", "RM "+formatCurrency(sampleData.total_amount));
+                
+                fillTableRows("transaction-data-5", (txn) =>
+                `<td>${txn["DATE"] || ""}</td>
+         <td>${txn["REF NO"] || ""}</td>
+         <td class="currency-cell">${"RM  "+formatCurrency(txn["DEBIT"])}</td>
+         <td class="currency-cell">${"RM "+formatCurrency(txn["CREDIT"])}</td>
+         <td class="currency-cell">${"RM "+formatCurrency(txn["BALANCE"])}</td>`
+                );
+            }
+            
+            // ---------- TEMPLATE 6 ----------
+            function loadTemplate6() {
+                setText("title-6", computeTitle(sampleData.customer_address));
+                setText("t6_customer_name", sampleData.customer_name);
+                setText("t6_customer_address", sampleData.customer_address);
+                setText("t6_vendor_name", sampleData.vendor_name);
+                setText("t6_vendor_address", sampleData.vendor_address);
+                setText("t6_date", sampleData.date);
+                setText("t6_customer_id", sampleData.customer_id);
+                setText("t6_page", sampleData.page);
+                setText("t6_total_amount", "RM "+formatCurrency(sampleData.total_amount));
+                setText("t6_total_amount_footer", "RM "+formatCurrency(sampleData.total_amount));
+                setText("grand-total-footer-6_3", "RM "+formatCurrency(sampleData.total_amount));
+                
+                fillTableRows("transaction-data-6", (txn) =>
+                `<td>${txn["REF NO"] || ""}</td>
+         <td>${txn["DATE"] || ""}</td>
+         <td>${txn["DESCRIPTION"] || ""}</td>
+         <td class="currency-cell">${"RM  "+formatCurrency(txn["DEBIT"])}</td>
+         <td class="currency-cell">0.00</td>
+         <td class="currency-cell">${"RM "+formatCurrency(txn["CREDIT"])}</td>
+         <td class="currency-cell">0.00</td>
+         <td class="currency-cell">${"RM "+formatCurrency(txn["BALANCE"])}</td>`
+                );
+            }
+            
+            // ---------- TEMPLATE 7 ----------
+            function loadTemplate7() {
+                setText("title-7", computeTitle(sampleData.customer_address));
+                setText("t7_customer_name", sampleData.customer_name);
+                setText("t7_customer_address", sampleData.customer_address);
+                setText("t7_vendor_name", sampleData.vendor_name);
+                setText("t7_vendor_address", sampleData.vendor_address);
+                setText("t7_customer_id", sampleData.customer_id);
+                setText("t7_term", sampleData.term);
+                setText("t7_date", sampleData.date);
+                setText("t7_period", sampleData.period);
+                setText("t7_total_amount", "RM "+formatCurrency(sampleData.total_amount));
+                setText("grand-total-footer-7_4", "RM "+formatCurrency(sampleData.total_amount));
+                
+                fillTableRows("transaction-data-7", (txn) =>
+                `<td>${txn["DATE"] || ""}</td>
+         <td>${txn["REF NO"] || ""}</td>
+         <td class="currency-cell">${"RM  "+formatCurrency(txn["DEBIT"])}</td>
+         <td class="currency-cell">${"RM  "+formatCurrency(txn["CREDIT"])}</td>
+         <td class="currency-cell">${"RM  "+formatCurrency(txn["BALANCE"])}</td>`
+                );
+            }
+            
+            // ---------- PUBLIC API FUNCTIONS ----------
+            // Call this with new JSON data from your backend
+            function loadAllTemplatesFromJson(newData) {
+                if (newData) Object.assign(sampleData, newData);
+                loadTemplate1(); loadTemplate2(); loadTemplate3();
+                loadTemplate4(); loadTemplate5(); loadTemplate6(); loadTemplate7();
+            }
+            
+            // Auto-load on page load
+            document.addEventListener("DOMContentLoaded", function() {
+                loadAllTemplatesFromJson();
+            });
+            
+            // Show specific template (for your existing template switcher)
+            function showTemplate(templateNum) {
+                document.querySelectorAll('.statement-container').forEach((el, idx) => {
+                    el.style.display = idx + 1 === templateNum ? 'block' : 'none';
+                });
+            }
+            function displaySelectedTemplate(){
+                templateSelector=$('#templateSelector').val();
+                $('.statement-container').hide();
+                $('#statement-content-'+templateSelector).show();
+                
+                
+            }
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+            
+            function get_selected_template(){
+                console.log("sampleData.template_id",sampleData.template_id);
+                if(!sampleData.client_test){
+                    $('#templateSelector').val(sampleData.template_id??1);
+                    switchTemplate(sampleData.template_id??1);
+                    displaySelectedTemplate();
+                    $('.button-tab-container').show();
+                }else{
+                    
+                    
+                    templateSelector=sessionStorage.getItem("selected_template")??1;
+                    $('#templateSelector').val(templateSelector);
+                    switchTemplate(templateSelector);
+                    displaySelectedTemplate();
+                    $('.button-tab-container').hide();
+                }
+            }
+            $(document).ready(function(){
+                get_selected_template();
+                
+            });
+            function switchTemplate(templateNum) {
+                $('#templateSelector').val(templateNum);
+                $('#templateSelector').trigger('change');
+                
+                
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelector('.switchTemplate' + templateNum).classList.add('active');
+                
+                showTemplate(templateNum);
+                sessionStorage.setItem("selected_template", templateNum);
+            }
+            function generatePDFFromCurrent() {
+                if(sampleData.template_id && sampleData.template_id!=templateSelector){
+                    rootPathCookie = getCookie('root_path');
+                    rootPathCookie = rootPathCookie.replace(/"/g, '')
+                    // If ROOT_PATH is empty, "/" or undefined, set to empty string
+                    if (!rootPathCookie || rootPathCookie === '/' || rootPathCookie === '' || rootPathCookie === '""') {
+                        ROOT_PATH = "";
+                        API_BASE = "http://localhost:8000";
+                    } else {
+                        // Production mode with proxy (e.g., /soa)
+                        ROOT_PATH = rootPathCookie;
+                        API_BASE = "https://payable.pixxa.tech:8080" + ROOT_PATH;
+                    }
+                    
+                    fetch(`${API_BASE}/v1/client/insert`, {
+                        method: 'PUT',
+                        headers: {
+                            'accept': 'application/json',
+                            
+                            "Authorization": `Bearer ${localStorage.getItem("token") || getCookie('access_token')} `,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            "client_id": sampleData.customer_id,
+                            "name": sampleData.customer_name,
+                            "template": templateSelector
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => console.log('Template saved:', data))
+                    .catch(error => console.error('Error:', error));
+                }
+                const selectedId = document.getElementById('templateSelector').value;
+                const elementId = 'statement-content-' + selectedId;
+                let filename = document
+                .getElementById('templateSelector')
+                .options[document.getElementById('templateSelector').selectedIndex]
+                .text
+                .replace(/[^a-zA-Z0-9]/g, '_') + '_SOA';
+                
+                generatePDF(elementId, filename);
+            }
+            
+            function generatePDF(elementId, filename) {
+                // const element = document.getElementById(elementId);
+                // const idx = elementId.slice(-1);
+                // const transactionBody = document.getElementById('transaction-data-' + idx);
+                
+                // if (!element || !transactionBody || transactionBody.rows.length === 0) {
+                //     document.getElementById('message').textContent = 'Please load data before generating PDF.';
+                //     document.getElementById('message').style.display = 'block';
+                //     return;
+                // }
+                
+                // const options = {
+                //     margin: [10, 5, 10, 5],
+                //     filename: filename,
+                //     image: { type: 'jpeg', quality: 0.98 },
+                //     html2canvas: { scale: 3, logging: false, scrollY: 0 },
+                //     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                // };
+                
+                // html2pdf().set(options).from(element).save();
+
+
+openPdfTab( filename)
+
+            }
+            function openPdfTab(filename) {
+    const selectedId = document.getElementById('templateSelector').value;
+    const elementId = 'statement-content-' + selectedId;
+    const element = document.getElementById(elementId);
+
+    if (!element) {
+        alert('Selected statement not found!');
+        return;
+    }
+
+    // Clone element to avoid affecting the visible page
+    const clonedElement = element.cloneNode(true);
+    clonedElement.style.display = 'block'; // ensure it's visible for html2canvas
+
+    const win = window.open('', '_blank');
+    const safeFilename = JSON.stringify(filename);
+
+    // Write minimal HTML to the new tab
+    win.document.write(`
+<html>
+<head>
+    <title>${filename}</title>
+ 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+          <style>
+        body {
+            background-color: #f4f4f4;
+            font-family: 'Arial', sans-serif;
+            text-transform: uppercase;
+        }
+        
+        /* --- 1. Control Panel Styles (Hidden from PDF) --- */
+        #controls {
+            background: #fff;
+            padding: 20px;
+            margin: 30px auto 10px;
+            /* max-width: 900px; */
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        #jsonInput {
+            min-height: 150px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        /* --- Template Display Container --- */
+        #template-display-area {
+            /* max-width: 900px; */
+            margin: 0 auto;
+        }
+        
+        /* --- Global Statement Base Styles --- */
+        .statement-container {
+            background: white;
+            padding: 30px;
+            width: 100%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .statement-container * {
+            font-size: 12px !important;
+            line-height: 1.3;
+            height: auto !important;
+        }
+        
+        .statement-container .header-title {
+            font-size: 20px !important;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .statement-container .currency-cell {
+            text-align: right;
+        }
+        
+        .statement-container .total {
+            font-weight: bold;
+        }
+        
+        .statement-container table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+        
+        .statement-container th,
+        .statement-container td {
+            padding: 5px;
+        }
+        
+        .statement-container .footer-note {
+            margin-top: 30px;
+            text-align: center;
+            font-style: italic;
+        }
+        
+        -button-container {
+            margin-top: 20px;
+        }
+        
+        /* --- TEMPLATE 1: LEDGER (ORIGINAL) --- */
+        #statement-content-1 table {
+            border: 1px solid darkgrey;
+        }
+        
+        #statement-content-1 th,
+        #statement-content-1 td {
+            border: 1px solid darkgrey;
+        }
+        
+        #statement-content-1 .aging-table td {
+            text-align: center !important;
+            font-weight: bold;
+        }
+        
+        /* --- TEMPLATE 2: (Clean Lines) --- */
+        #statement-content-2 th {
+            background-color: #f7f7f7;
+            border-bottom: 1px solid #ccc !important;
+            text-align: left !important;
+        }
+        
+        #statement-content-2 td {
+            border-bottom: 1px dotted #eee;
+        }
+        
+        #statement-content-2 .summary-block {
+            padding: 10px;
+            background-color: #fcfcfc;
+            border: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+        
+        #statement-content-2 .total-row td {
+            border-top: 2px solid #333;
+            border-bottom: none;
+            font-size: 14px !important;
+        }
+        
+        #statement-content-2 .aging-table th,
+        #statement-content-2 .aging-table td {
+            border: none;
+            text-align: center;
+        }
+        
+        /* --- TEMPLATE 3: SUMMARY (High Contrast) --- */
+        #statement-content-3 .summary-container {
+            background-color: #e6f7ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        #statement-content-3 .aging-section {
+            background-color: #fff3e6;
+            padding: 5px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        
+        #statement-content-3 .aging-table {
+            border: none;
+        }
+        
+        #statement-content-3 #total-balance-3 {
+            font-size: 24px !important;
+            font-weight: bold;
+            color: #cc0000;
+        }
+        
+        #statement-content-3 .transaction-table th {
+            background-color: #333;
+            color: white;
+            text-align: center;
+        }
+        
+        #statement-content-3 .transaction-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        #statement-content-3 .aging-table th,
+        #statement-content-3 .aging-table td {
+            border: none;
+        }
+        
+        /* --- TEMPLATE 1: customer/vendor styling --- */
+        #statement-content-1 .customer-info-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 5px;
+        }
+        
+        #statement-content-1 #customer-info-content-1 {
+            padding: 5px 0px;
+            border: 1px dashed #ccc;
+        }
+        
+        /* --- TEMPLATE 2: customer --- */
+        #statement-content-2 #customer-info-content-2 {
+            font-size: 12px !important;
+            color: #007bff;
+            padding: 5px 10px;
+            text-align: center;
+            background-color: #e9f7ff;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        /* --- TEMPLATE 3: customer --- */
+        #statement-content-3 #customer-info-content-3 {
+            padding: 0;
+            margin-bottom: 5px;
+            font-size: 12px !important;
+            border-bottom: 2px solid #cc0000;
+            padding-bottom: 3px;
+            color: #333;
+        }
+        
+        th,
+        td {
+            text-align: center !important;
+        }
+        
+        .hide {
+            display: none;
+        }
+    
+
+tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+     height: auto;
+}
+
+td, th {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+}
+
+
+
+    </style>
+</head>
+<body>
+    
+    <div id="${elementId}"></div>
+
+    <script>
+        window.onload = async function () {
+    const { jsPDF } = window.jspdf;
+
+    const element = document.getElementById('${elementId}');
+    element.innerHTML = ${JSON.stringify(clonedElement.outerHTML)};
+
+    
+
+    // Render full content to canvas
+    const canvas = await html2canvas(element, {
+        scale: 1,
+        useCORS: true,
+        windowWidth: element.scrollWidth
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 1.0);
+
+    const pdf = new jsPDF('portrait', 'pt', 'a4');
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+    }
+
+    pdf.save(${safeFilename}+'.pdf');
+         window.close();
+};
+
+    
+    <\/script>
+</body>
+</html>
+    `);
+
+    win.document.close();
+}
+
+            function openPdfTab1(filename) {
+                   const selectedId = document.getElementById('templateSelector').value;
+                const elementId = 'statement-content-' + selectedId;
+    const content = document.getElementById(elementId).outerHTML;
+ 
+    const win = window.open('', '_blank');
+    win.document.write(`
+        <html>
+        <head>
+            <title>Statement PDF</title>
+            
+    <style>
+        body {
+            background-color: #f4f4f4;
+            font-family: 'Arial', sans-serif;
+            text-transform: uppercase;
+        }
+        
+        /* --- 1. Control Panel Styles (Hidden from PDF) --- */
+        #controls {
+            background: #fff;
+            padding: 20px;
+            margin: 30px auto 10px;
+            /* max-width: 900px; */
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        #jsonInput {
+            min-height: 150px;
+            resize: vertical;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        /* --- Template Display Container --- */
+        #template-display-area {
+            /* max-width: 900px; */
+            margin: 0 auto;
+        }
+        
+        /* --- Global Statement Base Styles --- */
+        .statement-container {
+            background: white;
+            padding: 30px;
+            width: 100%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .statement-container * {
+            font-size: 12px !important;
+            line-height: 1.3;
+        }
+        
+        .statement-container .header-title {
+            font-size: 20px !important;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .statement-container .currency-cell {
+            text-align: right;
+        }
+        
+        .statement-container .total {
+            font-weight: bold;
+        }
+        
+        .statement-container table {
+            width: 100%;
+            margin-top: 10px;
+            border-collapse: collapse;
+        }
+        
+        .statement-container th,
+        .statement-container td {
+            padding: 5px;
+        }
+        
+        .statement-container .footer-note {
+            margin-top: 30px;
+            text-align: center;
+            font-style: italic;
+        }
+        
+        -button-container {
+            margin-top: 20px;
+        }
+        
+        /* --- TEMPLATE 1: LEDGER (ORIGINAL) --- */
+        #statement-content-1 table {
+            border: 1px solid darkgrey;
+        }
+        
+        #statement-content-1 th,
+        #statement-content-1 td {
+            border: 1px solid darkgrey;
+        }
+        
+        #statement-content-1 .aging-table td {
+            text-align: center !important;
+            font-weight: bold;
+        }
+        
+        /* --- TEMPLATE 2: (Clean Lines) --- */
+        #statement-content-2 th {
+            background-color: #f7f7f7;
+            border-bottom: 1px solid #ccc !important;
+            text-align: left !important;
+        }
+        
+        #statement-content-2 td {
+            border-bottom: 1px dotted #eee;
+        }
+        
+        #statement-content-2 .summary-block {
+            padding: 10px;
+            background-color: #fcfcfc;
+            border: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+        
+        #statement-content-2 .total-row td {
+            border-top: 2px solid #333;
+            border-bottom: none;
+            font-size: 14px !important;
+        }
+        
+        #statement-content-2 .aging-table th,
+        #statement-content-2 .aging-table td {
+            border: none;
+            text-align: center;
+        }
+        
+        /* --- TEMPLATE 3: SUMMARY (High Contrast) --- */
+        #statement-content-3 .summary-container {
+            background-color: #e6f7ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        #statement-content-3 .aging-section {
+            background-color: #fff3e6;
+            padding: 5px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+        }
+        
+        #statement-content-3 .aging-table {
+            border: none;
+        }
+        
+        #statement-content-3 #total-balance-3 {
+            font-size: 24px !important;
+            font-weight: bold;
+            color: #cc0000;
+        }
+        
+        #statement-content-3 .transaction-table th {
+            background-color: #333;
+            color: white;
+            text-align: center;
+        }
+        
+        #statement-content-3 .transaction-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        #statement-content-3 .aging-table th,
+        #statement-content-3 .aging-table td {
+            border: none;
+        }
+        
+        /* --- TEMPLATE 1: customer/vendor styling --- */
+        #statement-content-1 .customer-info-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 5px;
+        }
+        
+        #statement-content-1 #customer-info-content-1 {
+            padding: 5px 0px;
+            border: 1px dashed #ccc;
+        }
+        
+        /* --- TEMPLATE 2: customer --- */
+        #statement-content-2 #customer-info-content-2 {
+            font-size: 12px !important;
+            color: #007bff;
+            padding: 5px 10px;
+            text-align: center;
+            background-color: #e9f7ff;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        /* --- TEMPLATE 3: customer --- */
+        #statement-content-3 #customer-info-content-3 {
+            padding: 0;
+            margin-bottom: 5px;
+            font-size: 12px !important;
+            border-bottom: 2px solid #cc0000;
+            padding-bottom: 3px;
+            color: #333;
+        }
+        
+        th,
+        td {
+            text-align: center !important;
+        }
+        
+        .hide {
+            display: none !important;
+        }
+    </style>
+        </head>
+        <body>
+            ${content}
+
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+                
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"><\/script>
+<script>
+    window.onload = function () {
+    const { jsPDF } = window.jspdf;
+    const element = document.getElementById('statement-content-3');
+
+    const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'pt',
+        format: 'a4'
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+  filename1 = JSON.stringify(filename);
+    doc.html(element, {
+        width: pageWidth,     // ✅ FIT PAGE WIDTH
+        windowWidth: element.scrollWidth, // ✅ MATCH CONTENT WIDTH
+        autoPaging: 'text',             // ✅ SMART PAGE BREAK
+        html2canvas: {
+            scale: 0.7,                 // ✅ PREVENT CROPPING
+            useCORS: true
+        },
+        callback: function (doc) {
+             doc.save(\`\${filename1}.pdf\`);
+            window.close();
+        }
+    });
+};
+<\/script>
+          
+        </body>
+        </html>
+    `);
+
+    win.document.close();
+}
+
+        </script>
+        
+        
+    </body>
+    
+    </html>

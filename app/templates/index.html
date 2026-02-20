@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>SOA Admin</title>
+  <!-- base:css -->
+  <link rel="stylesheet" href="/static/app/vendors/typicons/typicons.css">
+  <link rel="stylesheet" href="/static/app/vendors/css/vendor.bundle.base.css">
+ <link rel="stylesheet" href="/static/app/vendors/mdi/css/materialdesignicons.min.css">
+  <!-- endinject -->
+  <!-- plugin css for this page -->
+  <!-- End plugin css for this page -->
+  <!-- inject:css -->
+   
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app/css/vertical-layout-light/style.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.26.0/dist/bootstrap-table.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-table@1.26.0/dist/extensions/sticky-header/bootstrap-table-sticky-header.css">
+
+<!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.26.0/dist/bootstrap-table.min.js"></script> -->
+<!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap-table@1.26.0/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js"></script> -->
+
+  <!-- endinject -->
+  
+  <style>
+  select.form-control, .select2-container--default select.select2-selection--single, .select2-container--default .select2-selection--single select.select2-search__field, select.typeahead, select.tt-query, select.tt-hint {
+    padding: .4375rem .75rem;
+    border: 0;
+    outline: 1px solid #495057 !important;
+    color: #4c4c4c;
+}
+
+.form-control, .select2-container--default .select2-selection--single, .select2-container--default .select2-selection--single .select2-search__field, .typeahead, .tt-query, .tt-hint
+
+ {
+    display: block;
+    width: 100%;
+    height: 2.175rem !important;
+    padding: 0.875rem 1.375rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1;
+    color: #495057;
+    background-color: #ffffff;
+    background-clip: padding-box;
+    border: 1px solid #f0f0f0;
+    border-radius: 5px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+    .hide{
+      display:none;
+    }
+    .tab-content { padding: 20px;}
+    .overdue-1-30   { background-color: #fff3cd; color: #856404; } /* Light Yellow */
+    .overdue-31-60  { background-color: #ffeaa7; }
+    .overdue-61-90  { background-color: #fdcb6e; }
+    .overdue-91-120 { background-color: #e17055; color: white; }
+    .overdue-121-150{ background-color: #d63031; color: white; }
+    .overdue-150    { background-color: #8b0000; color: white; } /* Dark Red */
+    .current-due    { background-color: #d4edda; color: #155724; font-weight: bold; }
+    .zero           { text-align: center; }
+    .table th { background-color: #f8f9fa; }
+    /* Sticky Filters Section */
+    #aging{
+    position: relative;
+    }
+#filterCard {
+    position: sticky;
+    top: 0;
+    z-index: 10; 
+    
+}
+#summaryBadges {
+    position: sticky;
+    top: 250px;
+    z-index: 10; 
+    
+}
+
+#agingTablediv .table-responsive {
+    max-height: 580px;        /* Choose your scroll height */
+    overflow-y: auto;
+}
+
+#agingTable thead th {
+    position: sticky;
+    top: 0;
+            /* Needed so text is readable */
+    z-index: 10;            /* Keep above table body */
+}
+.modal-body .table-responsive {
+    max-height: 500px;   /* Choose your scroll height */
+    overflow-y: auto;      /* Ensure table can scroll */
+}
+
+.modal-body thead th {
+    position: sticky;
+    top: 0;
+         /* required */
+    z-index: 10;         /* above table rows */
+}
+
+
+
+
+.nav-link.active {
+    color:  #0d6efd !important;
+  
+}
+
+.nav-link {
+    color: black;
+   
+}
+
+.table-responsive {
+    max-height: 80vh;
+    overflow: auto;
+  }
+  thead th {
+    position: sticky;
+    top: 40;
+         /* required */
+    z-index: 10;         /* above table rows */
+  }
+
+#agingTable thead th {
+    position: sticky;
+    top: 0;
+    text-align: center;
+    color: white;
+    z-index: 0;
+    vertical-align: middle;
+}
+
+
+.table thead th {
+    border-top: 0;
+    border-bottom-width: 1px;
+    font-weight: 500;
+    font-size: 12px;
+    font-weight: bold;
+}  .table th, .table td {
+    vertical-align: middle;
+    line-height: 1;
+    white-space: normal;
+} #summaryBadges {
+    position: sticky;
+    top: 250px;
+    z-index: 0;
+} #filterCard {
+    position: sticky;
+    top: 0;
+    z-index: 0;
+}
+
+.table thead th {
+    z-index: 0;
+    border-top: 0;
+    border-bottom-width: 1px;
+    font-weight: 500;
+    font-size: 12px;
+    font-weight: bold;
+    background-color: #844fc1;
+    color: white;
+    padding: 10px;
+}
+.table td {
+    
+    padding:5px;
+}
+
+
+/* Profile container */
+.profile-link {
+    gap: 10px;
+    padding: 6px 12px;
+}
+
+/* Profile image */
+.profile-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e5e7eb;
+}
+
+/* Text container */
+.profile-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+/* Username */
+.nav-profile-name {
+    font-size: 14px;
+    font-weight: 600;
+    
+}
+
+/* Role */
+.nav-profile-role {
+    font-size: 12px;
+    color: #d1d1d1 !important;
+    font-weight: 500;
+}
+.nav-profile-name {
+    margin-left: 0px !important;
+    text-transform: capitalize !important;
+}
+
+.fixed-table-wrapper {
+    max-height: 400px;     /* adjust as needed */
+    overflow-y: auto;
+}
+
+.fixed-table-wrapper {
+    max-height: 400px;       /* REQUIRED */
+    overflow-y: auto;        /* REQUIRED */
+    position: relative;
+}
+
+.fixed-table-wrapper thead th {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #f8f9fa;     /* Bootstrap table-light */
+}
+.element::-webkit-scrollbar {
+  display: none;
+}
+
+thead{
+  position: sticky; top: 0; z-index: 1;
+}
+tfoot{
+  position: sticky; bottom: 0; z-index: 1;
+}
+
+
+/* Add this CSS for responsive 3-column grid and user cards */
+#usersGrid .user-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-radius: 8px;
+}
+
+#usersGrid .user-col:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+#usersGrid .user-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 8px;
+  border: 2px solid #ddd;
+}
+
+#usersGrid .user-name {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+#usersGrid .user-email {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.current-user .user-avatar {
+  border-color: #007bff;
+  box-shadow: 0 0 8px rgba(0, 123, 255, 0.4);
+}
+
+.messages_list{
+          overflow: scroll;
+    max-height: 350px;
+    }
+  </style>
+</head>
+
+  <!-- base:js -->
+  <script src="/static/app/vendors/js/vendor.bundle.base.js"></script>
+  <!-- endinject -->
+  <!-- Plugin js for this page-->
+  <script src="/static/app/vendors/chart.js/Chart.min.js"></script>
+  <!-- End plugin js for this page-->
+  <!-- inject:js -->
+  <script src="/static/app/js/off-canvas.js"></script>
+  <script src="/static/app/js/hoverable-collapse.js"></script>
+  <script src="/static/app/js/template.js"></script>
+  <script src="/static/app/js/settings.js"></script>
+  <script src="/static/app/js/todolist.js"></script>
+  <!-- endinject -->
+  <!-- Custom js for this page-->
+
+  <script src="/static/app/js/dashboard.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.js" integrity="sha512-+k1pnlgt4F1H8L7t3z95o3/KO+o78INEcXTbnoJQ/F2VqDVhWoaiVml/OEHv9HsVgxUaVW+IbiZPUJQfF/YxZw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+        crossorigin="anonymous"></script>
+<link rel="stylesheet"
+      href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+  const USER_MENUS = {{ request.state.user.menus | tojson }};
+</script>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const hour = new Date().getHours();
+    let greeting = "";
+
+    if (hour < 12) {
+        greeting = "Good morning";
+    } else if (hour < 18) {
+        greeting = "Good afternoon";
+    } else {
+        greeting = "Good evening";
+    }
+
+    const usernameElement = document.querySelector(".nav-profile-name");
+    const usernameElementrole = document.querySelector(".nav-profile-role");
+    const welcomeNoteElement = document.getElementById("welcome-note");
+
+    if (usernameElement && welcomeNoteElement) {
+        welcomeNoteElement.innerHTML = ` <span style = "margin-right:5px">${greeting}  <b>${usernameElement.textContent}</b></span>, Welcome back.`;
+    }
+});
+
+
+</script>
+
+    <script>
+        // GLOBAL VARIABLES - Load ROOT_PATH from cookie
+        let ROOT_PATH = "";
+        let API_BASE = "";
+
+        // Initialize ROOT_PATH and API_BASE from cookie
+        function initGlobalPaths() {
+            rootPathCookie = getCookie('root_path');
+            rootPathCookie = rootPathCookie.replace(/"/g, '')
+            // If ROOT_PATH is empty, "/" or undefined, set to empty string
+            if (!rootPathCookie || rootPathCookie === '/' || rootPathCookie === '' || rootPathCookie === '""') {
+                ROOT_PATH = "";
+                API_BASE = "http://localhost:8000";
+            } else {
+                // Production mode with proxy (e.g., /soa)
+                ROOT_PATH = rootPathCookie;
+                API_BASE = "https://payable.pixxa.tech:8080" + ROOT_PATH;
+            }
+            
+            console.log('=== GLOBAL PATH CONFIGURATION ===');
+            console.log('ROOT_PATH from cookie:', ROOT_PATH || '(empty - local mode)');
+            console.log('API_BASE:', API_BASE);
+            console.log('Current URL:', window.location.href);
+            console.log('Mode:', ROOT_PATH ? 'Production (Proxy)' : 'Local Development');
+            console.log('================================');
+        }
+
+        // Global getCookie function
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Global navigation function
+        function navigate(path) {
+            // Only add ROOT_PATH if it's not empty and not "/"
+            const fullPath = (ROOT_PATH && ROOT_PATH !== '/') ? ROOT_PATH + path : path;
+            console.log('Navigating from:', path, 'to:', fullPath);
+            window.location.href = fullPath;
+        }
+
+        // Global apiFetch wrapper (with 401 redirect)
+        async function apiFetch(url, options = {}) {
+            const token = getCookie('access_token');
+            if (!token) {
+                console.error('apiFetch: No token - redirecting to login');
+                navigate('/');
+                return null;
+            }
+            
+            // Build full URL based on ROOT_PATH
+            let fullUrl;
+            if (url.startsWith('http')) {
+                // Already a full URL
+                fullUrl = url;
+            } else {
+                // Relative URL - add API_BASE only if ROOT_PATH exists
+                if (ROOT_PATH && ROOT_PATH !== '/') {
+                    fullUrl = API_BASE + url;
+                } else {
+                    // Local mode - just use origin + url
+                    fullUrl = window.location.origin + url;
+                }
+            }
+            
+            options.headers = { ...options.headers, 'Authorization': `Bearer ${token}` };
+            console.log('apiFetch:', url, '→', fullUrl);
+            
+            const response = await fetch(fullUrl, options);
+            console.log('apiFetch response status:', response.status);
+            
+            if (response.status === 401) {
+                console.error('apiFetch: 401 Unauthorized - clearing token & redirecting');
+                document.cookie = 'access_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                navigate('/');
+            }
+            return response;
+        }
+
+        // Initialize paths on page load
+        initGlobalPaths();
+    </script>
+
+<script>
+
+
+function canShowNotification(ButtonName) {
+    const approval = USER_MENUS?.approval?.buttons;
+
+    if (!approval) return false;
+
+    if (Array.isArray(approval)) {
+        const buttonNames = approval.map(item => item.button_name);
+        return buttonNames.includes(ButtonName);
+    }
+
+    if (typeof approval === 'object' && 'button_name' in approval) {
+        return approval.button_name === ButtonName;
+    }
+
+    return false;
+}
+
+
+function loadApprovalMessages(status = "pending") {
+  fetch(`${API_BASE}/v1/approval/notification`, {
+    method: "POST",
+    headers: {
+      "accept": "application/json",
+      "Content-Type": "application/json",
+      'Authorization': `Bearer ${localStorage.getItem('token') || getCookie('access_token')}`
+    },
+    body: JSON.stringify({
+      status: status
+    })
+  })
+    .then(res => res.json())
+    .then(res => {
+      const rows = res.clients || [];
+      const $messageList = $(".messages_list");
+
+      // Clear old messages, keep header
+      $messageList.find(".preview-item").remove();
+
+      if (!rows.length) {
+        $messageList.append(`
+          <a class="dropdown-item preview-item text-center text-muted">
+            No new messages
+          </a>
+        `);
+        return;
+      }
+
+      rows.forEach(r => {
+        $messageList.append(`
+          <a class="dropdown-item preview-item">
+            <div class="preview-thumbnail">
+              <div class="preview-icon bg-info">
+                <i class="mdi mdi-file-document"></i>
+              </div>
+            </div>
+            <div class="preview-item-content flex-grow">
+              <h6 class="preview-subject ellipsis font-weight-normal">
+                Invoice: ${r.invoice_ref_no}
+              </h6>
+              <p class="font-weight-light small-text text-muted mb-0">
+                Debit: ${r.debit}
+              </p>
+            </div>
+          </a>
+        `);
+      });
+    })
+    .catch(err => {
+      console.error("Failed to load approval messages", err);
+    });
+}
+
+let approvalInterval = null;
+
+// Always clear first (important for SPA / reloaded scripts)
+if (approvalInterval) {
+  clearInterval(approvalInterval);
+  approvalInterval = null;
+}
+
+if (canShowNotification('notification')) {
+  console.log('Notification permission: TRUE');
+
+  loadApprovalMessages("pending");
+
+  approvalInterval = setInterval(() => {
+    loadApprovalMessages("pending");
+  }, 50000);
+
+} else {
+  console.log('Notification permission: FALSE');
+}
+
+
+</script>
+
+<script>
+function getAuthToken() {
+  return localStorage.getItem('token') || getCookie('access_token'); // your existing function
+}
+
+// Entry point on icon click
+function loadUserListOnClick(event) {
+  
+  const usersGrid = document.getElementById('usersGrid');
+  const dropdownMenu = document.getElementById('userListMenu');
+  if (!usersGrid) {
+    console.error('usersGrid element not found!');
+    return;
+  }
+
+  if (usersGrid.children.length > 0) {
+    loadUserList();
+    // dropdownMenu.classList.add('show');
+    return;
+  }
+
+  loadUserList();
+}
+
+var toggleicon = true;
+// Main loader
+async function loadUserList() {
+  const loadingUsers = document.getElementById('loadingUsers');
+  const usersGrid = document.getElementById('usersGrid');
+  const dropdownMenu = document.getElementById('userListMenu');
+
+  if (!loadingUsers || !usersGrid || !dropdownMenu) {
+    console.error('Missing elements:', {loadingUsers, usersGrid, dropdownMenu});
+    return;
+  }
+
+  loadingUsers.style.display = 'block';
+
+  try {
+    const response = await fetch(`${API_BASE}/v1/impersonate/subscribers`, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json',
+        'Authorization': `Bearer ${getAuthToken()}`
+      }
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const data = await response.json();
+
+    const currentUserEmail = data.current_user_mail;           // Real logged-in user
+    const impersonatedById = data.impersonated_by;             // null or original admin ID
+    let subscribers = data.subscribers || [];
+
+    if (!Array.isArray(subscribers) || subscribers.length === 0) {
+      usersGrid.innerHTML = '<div class="col-12 text-center text-muted">No subscribers found</div>';
+      loadingUsers.style.display = 'none';
+      return;
+    }
+
+    // Find the currently impersonated user (if any)
+    const impersonatedUser = impersonatedById
+      ? subscribers.find(u => u.id === impersonatedById)
+      : null;
+
+    // Sort: put impersonated user first, then current real user
+    subscribers.sort((a, b) => {
+      if (impersonatedUser && a.id === impersonatedUser.id) return -1;
+      if (impersonatedUser && b.id === impersonatedUser.id) return 1;
+      if (a.email === currentUserEmail) return -1;
+      if (b.email === currentUserEmail) return 1;
+      return 0;
+    });
+
+    usersGrid.innerHTML = '';
+
+    subscribers.forEach(user => {
+      const card = createUserCard(user, currentUserEmail, impersonatedUser);
+      usersGrid.appendChild(card);
+    });
+
+    loadingUsers.style.display = 'none';
+    usersGrid.style.display = 'flex';
+    // dropdownMenu.classList.add('show'); // Keep dropdown open
+    // dropdownMenu.setAttribute('aria-expanded', 'true');
+    const dropdownToggle = document.getElementById('userListDropdown');
+    const dropdownMenu = dropdownToggle.nextElementSibling;
+
+    // Show dropdown
+    if (toggleicon == true) {
+    dropdownMenu.classList.add('show');
+    toggleicon = false
+    } else {
+      dropdownMenu.classList.remove('show');
+      toggleicon = true
+    }
+
+  } catch (err) {
+    console.error('Load failed:', err);
+    loadingUsers.innerHTML = '<div class="text-danger">Failed to load users<br><small>Check console</small></div>';
+  }
+}
+$(document).ready(function(){
+  $(document).on('click', function(){
+    const dropdownToggle = document.getElementById('userListDropdown');
+    const dropdownMenu = dropdownToggle.nextElementSibling;
+    dropdownMenu.classList.remove('show');
+    toggleicon = true
+  })
+})
+
+// Create user card with proper highlighting and compact size
+function createUserCard(user, currentUserEmail, impersonatedUser) {
+  const col = document.createElement('div');
+  col.className = 'col-4 text-center rounded-4';
+  col.style.cursor = 'pointer';
+  col.style.transition = 'all 0.3s ease';
+  col.style.padding = '0.5rem';          // Reduced padding
+  col.style.maxHeight = '150px';         // Updated height
+  col.style.display = 'flex';
+  col.style.flexDirection = 'column';
+  col.style.justifyContent = 'center';
+  col.style.alignItems = 'center';
+
+  // Determine user states
+  const isImpersonated = impersonatedUser && user.id === impersonatedUser.id;
+  const isRealCurrent = user.email === currentUserEmail && !isImpersonated;
+
+  // Define colors and styles based on user state
+  let borderColor, badgeBgColor, borderClass;
+
+  if (isImpersonated) {
+    borderColor = '#fd7e14';
+    badgeBgColor = 'bg-warning text-dark';
+    borderClass = 'border border-warning border-3 shadow-lg';
+  } else if (isRealCurrent) {
+    borderColor = '#28a745';
+    badgeBgColor = 'bg-success text-white';
+    borderClass = 'border border-success border-3 shadow-lg';
+  } else {
+    borderColor = '#844fc1';
+    badgeBgColor = 'bg-primary text-white';
+    borderClass = 'border border-primary border-3';
+  }
+
+  col.classList.add(...borderClass.split(' '));
+
+  // Format role
+  const formattedRole = user.role
+    ? user.role.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+    : 'User';
+
+  // Build compact card content
+  col.innerHTML = `
+    <div class="badge ${badgeBgColor} mb-1 px-2 py-0 fw-semibold small">
+      ${formattedRole}
+    </div>
+
+    <img class="user-avatar rounded-circle mb-1 shadow"
+         src="${user.profile_path ? '/static/app/images/profiles/' + user.profile_path : '/static/app/images/profiles/default-profile.png'}"
+         alt="${user.name}"
+         style="
+           width: 55px;
+           height: 55px;
+           object-fit: cover;
+           border: 3px solid ${borderColor};
+           box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+         ">
+
+    <div class="user-name fw-bold small mt-0">${user.name}</div>
+    <div class="user-email text-muted small text-truncate" style="max-width: 120px;">
+      ${user.email}
+    </div>
+  `;
+
+  // Hover effect
+  col.onmouseover = () => {
+    col.style.transform = 'translateY(-4px)';
+    col.style.boxShadow = '0 8px 20px rgba(0,0,0,0.2)';
+  };
+
+  col.onmouseout = () => {
+    col.style.transform = 'translateY(0)';
+    col.style.boxShadow =
+      isImpersonated || isRealCurrent
+        ? '0 4px 12px rgba(0,0,0,0.2)'
+        : 'none';
+  };
+
+  // Click behavior
+  col.onclick = () => {
+    if (isImpersonated) {
+      handleStopImpersonation();
+    } else {
+      handleImpersonate(user.id);
+    }
+  };
+
+  return col;
+}
+
+
+// Separate functions for clarity
+async function handleImpersonate(subscriberId) {
+  const url = `${API_BASE}/v1/impersonate/login/subscriber/${subscriberId}`;
+  await performSwitch(url);
+}
+
+async function handleStopImpersonation() {
+  const url = `${API_BASE}/v1/impersonate/login/stop-impersonation`;
+  await performSwitch(url);
+}
+
+async function performSwitch1(url) {
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'Authorization': `Bearer ${getAuthToken()}`
+      }
+    });
+
+    if (res.ok) {
+      location.reload();
+    } else {
+      const msg = await res.text();
+      alert('Switch failed: ' + msg);
+    }
+  } catch (e) {
+    console.error('Switch error:', e);
+    alert('Network error during switch');
+  }
+}
+
+async function  performSwitch(url) {
+  fetch(url, {
+    method: "POST",
+    headers: {
+        'accept': 'application/json',
+        'Authorization': `Bearer ${getAuthToken()}`
+      }
+})
+.then(response => {
+    if (!response.ok) {
+        throw new Error("Failed");
+    }
+    return response.json();
+})
+.then(data => {
+    if (data.success) {
+        // Cookies are already set by the browser
+        // Now redirect client-side
+        window.location.href = data.redirect_to || "/app/dashboard";
+    }
+})
+.catch(err => {
+    console.error(err);
+    // Handle error, e.g., show message
+});
+}
+
+
+document.addEventListener('DOMContentLoaded', function () {
+  const dropdownToggle = document.getElementById('userListDropdown');
+  if (dropdownToggle) {
+    dropdownToggle.addEventListener('click', loadUserListOnClick);
+  } else {
+    console.error('Element #userListDropdown not found!');
+  }
+});
+
+</script>
+<style>
+
+  .pdf-loader {
+  position: fixed;       /* fixed to viewport */
+  top: 0;
+  left: 0;
+  width: 100vw;          /* full viewport width */
+  height: 100vh;         /* full viewport height */
+  background: white;
+  z-index: 9999;         /* above everything */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+
+}
+
+</style>
+<body>
+  
+  <div class="container-scroller">
+    <div id="pdfLoader" class="pdf-loader d-none">
+     <div class="spinner-border text-primary" role="status"></div>
+     <div class="mt-2">Generating PDF…</div>
+   </div>
+    <!-- partial:partials/_navbar.html -->
+    <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
+      <div class="navbar-brand-wrapper d-flex justify-content-center">
+        <div class="navbar-brand-inner-wrapper d-flex justify-content-between align-items-center w-100">
+          <a class="navbar-brand brand-logo" href="#" onclick="navigate('/app/dashboard'); return false;"><span style="color:white;">SOA</span></a>
+          <a class="navbar-brand brand-logo-mini" href="#" onclick="navigate('/app/dashboard'); return false;"><span style="color:white;">SOA</span></a>
+          <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
+            <span class="typcn typcn-th-menu"></span>
+          </button>
+        </div>
+      </div>
+      <div class="navbar-menu-wrapper d-flex align-items-center justify-content-end">
+       
+          
+        <span id="welcome-note" style="text-transform: capitalize;"></span>
+   
+     
+        <ul class="navbar-nav navbar-nav-right">
+          
+          <li class="nav-item dropdown mr-0">
+            <a class="nav-link count-indicator dropdown-toggle d-flex align-items-center justify-content-center" id="notificationDropdown" href="#" data-toggle="dropdown">
+              <i class="typcn typcn-bell mx-0"></i>
+              <span class="count"></span>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right navbar-dropdown preview-list messages_list" aria-labelledby="notificationDropdown">
+              <p class="mb-0 font-weight-normal float-left dropdown-header">Notifications</p>
+              
+            </div>
+          </li>
+
+          <!-- Updated User List Dropdown HTML -->
+
+          {% if request.state.user['can_impersonate'] or request.state.user['impersonated'] %}
+           <li class="nav-item dropdown mr-0" id="usernavitem">
+
+  <a class="nav-link count-indicator dropdown-toggle d-flex align-items-center justify-content-center"
+   id="userListDropdown"
+   href="#"
+   role="button"
+   data-bs-toggle="dropdown"
+   aria-expanded="false"
+   data-bs-auto-close="outside">   <!-- keep this if you want clicks inside to not close it -->
+  <i class="mdi mdi-account-switch mx-0"></i>
+  <!-- <span class="count"></span> -->
+</a>
+
+  <div class="dropdown-menu dropdown-menu-end navbar-dropdown user-list p-4 shadow"
+       aria-labelledby="userListDropdown"
+       id="userListMenu"
+       style="min-width: 420px;">
+    
+    <h6 class="dropdown-header mb-3 fw-bold">User Lists</h6>
+    
+    <div id="loadingUsers" class="text-center text-muted py-5">
+      <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+      Loading users...
+    </div>
+    
+    <div id="usersGrid" class="row g-3"></div>
+    
+  </div>
+</li>
+{% endif %}
+        </ul>
+        <button class="navbar-toggler navbar-toggler-right d-lg-none align-self-center" type="button" data-toggle="offcanvas">
+          <span class="typcn typcn-th-menu"></span>
+        </button>
+
+           <ul class="navbar-nav mr-lg-2" style="margin-left: 20px;">
+          <li class="nav-item nav-profile dropdown">
+           <a class="nav-link d-flex align-items-center profile-link" style="    background: #844fc1;
+    padding-left: 10px;
+    padding-right: 10px;
+    color: white;
+    border-radius: 5px;"
+   href="#"
+   data-toggle="dropdown"
+   id="profileDropdown">
+
+  <img src="/static/app/images/profiles/{{ request.state.user.profile }}"
+       alt="profile"
+       class="profile-avatar"/>
+
+  <div class="profile-text">
+    <span class="nav-profile-name">
+      {{ request.state.user.username }}      
+    </span>
+    <span class="nav-profile-role">
+  {{ request.state.user.role.replace('_', ' ').title() }}
+</span>
+  </div>
+
+</a>
+            <div class="dropdown-menu dropdown-menu-right navbar-dropdown" aria-labelledby="profileDropdown">
+              <a class="dropdown-item" onclick="navigate('/app/profile'); return false;">
+                <i class="typcn  typcn typcn-user text-primary"></i>
+                Profile
+              </a>
+              <a class="dropdown-item" onclick="navigate('/app/settings'); return false;">
+                <i class="typcn typcn-cog-outline text-primary"></i>
+                Settings
+              </a>
+              <a class="dropdown-item" onclick="navigate('/logout'); return false;">
+                <i class="typcn typcn-eject text-primary"></i>
+                Logout
+              </a>
+            </div>
+          </li>
+         
+        </ul>
+      </div>
+    </nav>
+  
+    <div class="container-fluid page-body-wrapper">
+      
+      <div id="right-sidebar" class="settings-panel">
+        <i class="settings-close typcn typcn-times"></i>
+        <ul class="nav nav-tabs" id="setting-panel" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" id="todo-tab" data-toggle="tab" href="#todo-section" role="tab" aria-controls="todo-section" aria-expanded="true">TO DO LIST</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="chats-tab" data-toggle="tab" href="#chats-section" role="tab" aria-controls="chats-section">CHATS</a>
+          </li>
+        </ul>
+        <div class="tab-content" id="setting-content">
+          <div class="tab-pane fade show active scroll-wrapper" id="todo-section" role="tabpanel" aria-labelledby="todo-section">
+            <div class="add-items d-flex px-3 mb-0">
+              <form class="form w-100">
+                <div class="form-group d-flex">
+                  <input type="text" class="form-control todo-list-input" placeholder="Add To-do">
+                  <button type="submit" class="add btn btn-primary todo-list-add-btn" id="add-task">Add</button>
+                </div>
+              </form>
+            </div>
+            <div class="list-wrapper px-3">
+              <ul class="d-flex flex-column-reverse todo-list">
+                <li>
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input class="checkbox" type="checkbox">
+                      Team review meeting at 3.00 PM
+                    </label>
+                  </div>
+                  <i class="remove typcn typcn-delete-outline"></i>
+                </li>
+                <li>
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input class="checkbox" type="checkbox">
+                      Prepare for presentation
+                    </label>
+                  </div>
+                  <i class="remove typcn typcn-delete-outline"></i>
+                </li>
+                <li>
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input class="checkbox" type="checkbox">
+                      Resolve all the low priority tickets due today
+                    </label>
+                  </div>
+                  <i class="remove typcn typcn-delete-outline"></i>
+                </li>
+                <li class="completed">
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input class="checkbox" type="checkbox" checked>
+                      Schedule meeting for next week
+                    </label>
+                  </div>
+                  <i class="remove typcn typcn-delete-outline"></i>
+                </li>
+                <li class="completed">
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input class="checkbox" type="checkbox" checked>
+                      Project review
+                    </label>
+                  </div>
+                  <i class="remove typcn typcn-delete-outline"></i>
+                </li>
+              </ul>
+            </div>
+            <div class="events py-4 border-bottom px-3">
+              <div class="wrapper d-flex mb-2">
+                <i class="typcn typcn-media-record-outline text-primary mr-2"></i>
+                <span>Feb 11 2018</span>
+              </div>
+              <p class="mb-0 font-weight-thin text-gray">Creating component page</p>
+              <p class="text-gray mb-0">build a js based app</p>
+            </div>
+            <div class="events pt-4 px-3">
+              <div class="wrapper d-flex mb-2">
+                <i class="typcn typcn-media-record-outline text-primary mr-2"></i>
+                <span>Feb 7 2018</span>
+              </div>
+              <p class="mb-0 font-weight-thin text-gray">Meeting with Alisa</p>
+              <p class="text-gray mb-0 ">Call Sarah Graves</p>
+            </div>
+          </div>
+          <!-- To do section tab ends -->
+          <div class="tab-pane fade" id="chats-section" role="tabpanel" aria-labelledby="chats-section">
+            <div class="d-flex align-items-center justify-content-between border-bottom">
+              <p class="settings-heading border-top-0 mb-3 pl-3 pt-0 border-bottom-0 pb-0">Friends</p>
+              <small class="settings-heading border-top-0 mb-3 pt-0 border-bottom-0 pb-0 pr-3 font-weight-normal">See All</small>
+            </div>
+            <ul class="chat-list">
+              <li class="list active">
+                <div class="profile"><img src="/static/app/images/faces/face1.jpg" alt="image"><span class="online"></span></div>
+                <div class="info">
+                  <p>Thomas Douglas</p>
+                  <p>Available</p>
+                </div>
+                <small class="text-muted my-auto">19 min</small>
+              </li>
+              <li class="list">
+                <div class="profile"><img src="/static/app/images/faces/face2.jpg" alt="image"><span class="offline"></span></div>
+                <div class="info">
+                  <div class="wrapper d-flex">
+                    <p>Catherine</p>
+                  </div>
+                  <p>Away</p>
+                </div>
+                <div class="badge badge-success badge-pill my-auto mx-2">4</div>
+                <small class="text-muted my-auto">23 min</small>
+              </li>
+              <li class="list">
+                <div class="profile"><img src="/static/app/images/faces/face3.jpg" alt="image"><span class="online"></span></div>
+                <div class="info">
+                  <p>Daniel Russell</p>
+                  <p>Available</p>
+                </div>
+                <small class="text-muted my-auto">14 min</small>
+              </li>
+              <li class="list">
+                <div class="profile"><img src="/static/app/images/faces/face4.jpg" alt="image"><span class="offline"></span></div>
+                <div class="info">
+                  <p>James Richardson</p>
+                  <p>Away</p>
+                </div>
+                <small class="text-muted my-auto">2 min</small>
+              </li>
+              <li class="list">
+                <div class="profile"><img src="/static/app/images/faces/face5.jpg" alt="image"><span class="online"></span></div>
+                <div class="info">
+                  <p>Madeline Kennedy</p>
+                  <p>Available</p>
+                </div>
+                <small class="text-muted my-auto">5 min</small>
+              </li>
+              <li class="list">
+                <div class="profile"><img src="/static/app/images/faces/face6.jpg" alt="image"><span class="online"></span></div>
+                <div class="info">
+                  <p>Sarah Graves</p>
+                  <p>Available</p>
+                </div>
+                <small class="text-muted my-auto">47 min</small>
+              </li>
+            </ul>
+          </div>
+          <!-- chat tab ends -->
+        </div>
+      </div>
+      <!-- partial -->
+      <!-- partial:partials/_sidebar.html -->
+      <!-- <nav class="sidebar sidebar-offcanvas" id="sidebar"> -->
+      <nav class="sidebar sidebar-offcanvas" id="sidebar" style="
+    z-index: 1;
+">
+        <ul class="nav">
+          <li class="nav-item">
+            <a class="nav-link" href="#" onclick="navigate('/app/dashboard'); return false;">
+              <i class="typcn typcn-device-desktop menu-icon"></i>
+              <span class="menu-title">Dashboard</span>
+              
+            </a>
+          </li>
+
+
+
+
+           {% if 'settings' in request.state.user.menus.keys() %} 
+            
+            <li class="nav-item {% if 'settings' in request.path %}active{% endif %}">
+
+            <a class="nav-link" href="#"  onclick="navigate('/app/settings'); return false;">
+              <i class="typcn typcn-cog menu-icon"></i>
+              <span class="menu-title">Settings</span>
+              
+            </a>
+          </li>
+          {% endif %}
+
+
+          <li class="nav-item">
+            <a class="nav-link" onclick="navigate('/logout'); return false;">
+              <i class="typcn typcn-mortar-board menu-icon"></i>
+              <span class="menu-title">Logout</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+      <!-- partial -->
+      <div class="main-panel">
+        <div class="content-wrapper">
+          
+
+          {% if 'dashboard' in request.path %}
+            {% extends "dashboard.html" %}
+          {% endif %}
+          {% if 'v1/dash' in request.path %}
+            {% extends "dashboard_v2.html" %}
+          {% endif %}
+          {% if 'invoicesaging' in request.path %}
+            {% extends "invoicesaging.html" %}
+          {% endif %}
+
+          
+           {% if 'profile' in request.path %}
+            {% extends "profile.html" %}
+          {% endif %}
+          
+          
+          {% if 'users_list' in request.path %}
+            {% extends "users1.html" %}
+          {% endif %}
+          {% if 'role' in request.path %}
+            {% extends "role.html" %}
+          {% endif %}
+          {% if 'category' in request.path %}
+            {% extends "category.html" %}
+          {% endif %}
+          {% if 'clients' in request.path %}
+            {% extends "client_manage.html" %}
+          {% endif %}
+          {% if 'menu' in request.path %}
+            {% extends "menu.html" %}
+          {% endif %}
+          {% if 'button' in request.path %}
+            {% extends "button.html" %}
+          {% endif %}
+          {% if  request.path.endswith('settings') %}
+            {% extends "settings.html" %}
+          {% endif %}
+          
+       
+        </div>
+        <!-- content-wrapper ends -->
+        <!-- partial:partials/_footer.html -->
+        <footer class="footer">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-sm-flex justify-content-center justify-content-sm-between">
+                        <span class="text-muted text-center text-sm-left d-block d-sm-inline-block">Copyright © 2020 <a href="https://www.bootstrapdash.com/" class="text-muted" target="_blank">Bootstrapdash</a>. All rights reserved.</span>
+                        <span class="float-none float-sm-right d-block mt-1 mt-sm-0 text-center text-muted">Free <a href="https://www.bootstrapdash.com/" class="text-muted" target="_blank">Bootstrap dashboard</a> templates from Bootstrapdash.com</span>
+                    </div>
+                </div>    
+            </div>        
+        </footer>
+        <!-- partial -->
+      </div>
+      <!-- main-panel ends -->
+    </div>
+    <!-- page-body-wrapper ends -->
+  </div>
+  <!-- container-scroller -->
+   <div id="userRole" data-role="{{ request.state.user.role }}"></div>
+
+</body>
+
+</html>
+
