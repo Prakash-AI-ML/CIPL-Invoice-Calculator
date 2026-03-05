@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from .endpoints import auth, users, category, admin,  menu_permissions, menus, client_details, button_permissions, buttons, roles, user_management, impersonate, dashboard
+from .endpoints import auth, users, category, admin,  menu_permissions, menus, client_details, button_permissions, buttons, roles, user_management, impersonate, dashboard, cipl, delivery_order, delivery_order_setting
 
 api_router = APIRouter()  # Main V1 router
 
@@ -19,5 +19,8 @@ api_router.include_router(menu_permissions.router, prefix="/menu-permissions", t
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
 api_router.include_router(client_details.router, prefix="/client-details", tags=["Clients Details"])
 
+api_router.include_router(cipl.router, prefix="/cipl", tags=["CIPL"])
+api_router.include_router(delivery_order.router, prefix="/do", tags=["Delivery Orders"])
+api_router.include_router(delivery_order_setting.router, prefix="/delivery-order", tags=["Delivery Order Settings"])
 # Export for parent import
 __all__ = ["api_router"]
