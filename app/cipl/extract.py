@@ -83,6 +83,9 @@ def clean_dataframe(dic):
         qty = data.get('QUANTITY')
         fob_price = data.get('FOB PRICE SGD')
         fob_amount = data.get('FOB AMOUNT SGD')
+        if 'FOB PRICE SGD' not in data:
+            fob_price = data.get('PRICE SGD')
+            fob_amount = data.get('AMOUNT SGD')
 
         if re.fullmatch(r'ROW\s*\d+', desc):
             pass
@@ -199,6 +202,15 @@ def get_data(df):
 
 def get_final_recalculate_data(df_transactions, divided_by):
     total_amount = 0
+    # print(df_transactions.columns)
+    if 'PRICE SGD' in df_transactions.columns:
+        df_transactions = df_transactions.rename(columns={
+                            'PRICE SGD': 'FOB PRICE SGD'
+                        })
+    if 'AMOUNT SGD' in df_transactions.columns:
+        df_transactions = df_transactions.rename(columns={
+                            'AMOUNT SGD': 'FOB AMOUNT SGD'
+                        })
     for row in df_transactions.iterrows():
         if pd.isna(row[1]['FOB PRICE SGD']):
             pass
@@ -301,6 +313,7 @@ def analysis_cipl(df, df1, divided_by = None):
     modified_items = copy.deepcopy(original_items)
     total_idx = df1[df1.iloc[:, 6].astype(str).str.contains('total', case=False, na=False)].index[0]
     importer_of_record[0] = f"CONSIGNEE:\n{importer_of_record[0]}"
+    total_w = f'{int(total_w.replace(',', '')):,}'
 
     if divided_by == None:
         total = df1.iloc[total_idx, 7]
@@ -311,7 +324,7 @@ def analysis_cipl(df, df1, divided_by = None):
     for item in modified_items:
         if item['description'] in DESCRIPTION_MAPPING:
             item['description'] = DESCRIPTION_MAPPING[item['description']]
-    
+    print(total_w, type(total_w))
     data = dict(
                 shipper = shipper,
                 importer_of_record = importer_of_record,

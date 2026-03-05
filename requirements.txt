@@ -25,3 +25,6 @@ requests
 PyMuPDF
 pillow
 xlrd
+docx2pdf
+spire-doc
+xlsxwriter

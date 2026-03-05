@@ -402,6 +402,8 @@ def add_total_row(doc, col_width, total):
     # # Apply solid border to both cells
     for idx, cell in enumerate(footer_table.rows[0].cells):
         if idx == 1:
+            number = float(total.replace(',', ''))
+            total = f"{number:,.2f}"
             write_amount(cell, total, width=col_widths[0], bold= True)
         if idx == 0:
             write_cell(cell, "TOTAL INVOICE VALUE:", align=WD_ALIGN_PARAGRAPH.RIGHT, width=col_widths[1], bold= True, add_para = False, right_indent= 0)
