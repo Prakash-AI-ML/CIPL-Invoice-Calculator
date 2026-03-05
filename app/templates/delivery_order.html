@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Note Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .company-info {
+            text-align: right;
+        }
+        .title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .ref-info {
+            display: flex;
+            justify-content: space-between;
+        }
+        .section {
+            display: flex;
+            justify-content: space-between;
+        }
+        .left, .right {
+            width: 48%;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .disclaimer {
+            font-size: 12px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .colors {
+            display: flex;
+            justify-content: space-around;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+        }
+        button {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #preview-section {
+            display: none;
+            margin-top: 40px;
+        }
+        #download-link {
+            display: block;
+            margin: 20px auto;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">Trans Pacific</div>
+            <div class="company-info">
+                TRANS PACIFIC LOGISTICS PTE. LTD. (UEN 202430058Z)<br>
+                519 Balestier Road, #04-02 Le Shantier, Singapore 329852.<br>
+                Tel: +65 6327 1158/+65 6327 1159 Fax: +65 6225 2004
+            </div>
+        </div>
+
+        <h1 class="title">DELIVERY NOTE</h1>
+
+        <div class="ref-info">
+            <div>Reference No: <input type="text" id="ref_no" value="ES-00109"></div>
+            <div>DATE: <input type="text" id="date" value="09/02/2026"></div>
+        </div>
+        <div>PO NO: <input type="text" id="po_no" value="4302337071"></div>
+
+        <div class="section">
+            <div class="left">
+                <h3>COLLECTION DETAIL</h3>
+                <table>
+                    <tr><th>Address:</th><td><textarea id="collection_address">Exentec Singapore Pte , Ltd, 8 Tuas South Lane Blk 5 Singapore 637302</textarea></td></tr>
+                    <tr><th>Contact Person:</th><td><input type="text" id="collection_contact_person" value=""></td></tr>
+                    <tr><th>Tel:</th><td><input type="text" id="collection_tel" value=""></td></tr>
+                    <tr><th>Collection Date:</th><td><input type="text" id="collection_date" value="09-02-2026"></td></tr>
+                    <tr><th>Collection Time:</th><td><input type="text" id="collection_time" value=""></td></tr>
+                    <tr><th>Total Packages:</th><td><input type="text" id="total_packages" value="25"></td></tr>
+                    <tr><th>Cargo Description:</th><td><input type="text" id="cargo_description" value="TBA"></td></tr>
+                    <tr><th>Ref:</th><td><input type="text" id="cargo_ref" value="ES-00109 – TBA/TBA"></td></tr>
+                </table>
+                <h4>For "Trans Pacific Logistics Pte. Ltd."</h4>
+                <table>
+                    <tr><th>Type of Truck:</th><td><input type="text" id="truck_type" value="40FT Container Truck"></td></tr>
+                    <tr><th>Truck No:</th><td><input type="text" id="truck_number" value="71-4013SKL/63-8600BKK"></td></tr>
+                    <tr><th>Driver:</th><td><input type="text" id="driver" value="Jatuporn"></td></tr>
+                    <tr><th>Date:</th><td><input type="text" id="collection_date_" value="09-02-2026"></td></tr>
+                </table>
+            </div>
+            <div class="right">
+                <h3>DELIVERY DETAIL</h3>
+                <table>
+                    <tr><th>Address:</th><td><textarea id="delivery_address">Quartz Computing Co.,  Ltd. WHA Eastern Seaboard Industrial Estate 3.1 Plot No. TX02 Tambol Nong Sua Chang, Nong Yai District, Chon Buri, Thailand</textarea></td></tr>
+                    <tr><th>Contact Person:</th><td><input type="text" id="delivery_contact_person" value="Supreeya Nirotorn"></td></tr>
+                    <tr><th>Tel:</th><td><input type="text" id="delivery_tel" value="089 894 6594"></td></tr>
+                    <tr><th>Delivery Date:</th><td><input type="text" id="delivery_date" value="20-02-2026"></td></tr>
+                    <tr><th>Delivery Time:</th><td><input type="text" id="delivery_time" value=""></td></tr>
+                    <tr><th>Total Weight:</th><td><input type="text" id="total_weight" value="9,730.00"></td></tr>
+                </table>
+                <h4>For "Client Received By"</h4>
+                <table>
+                    <tr><th>Name:</th><td><input type="text" id="name" value=""></td></tr>
+                    <tr><th>ID No:</th><td><input type="text" id="id" value=""></td></tr>
+                    <tr><th>Signature:</th><td><input type="text" id="signature" value=""></td></tr>
+                    <tr><th>Date:</th><td><input type="text" id="delivery_date_" value=""></td></tr>
+                </table>
+            </div>
+        </div>
+
+        <div>Remarks: <textarea id="remarks"></textarea></div>
+
+        <div class="disclaimer">
+            "Any claims of goods damaged / lost shall be made known to TRANS PACIFIC LOGISTICS PTE. LTD. in writing within 4 days from the date of the goods received. Failure to so shall be deemed as goods received in good order and any claim whatsoever shall not be entertained."
+        </div>
+
+        <div class="colors">
+            <span>White – Customer</span>
+            <span>Pink – Operation</span>
+            <span>Yellow – Accounts</span>
+            <span>Blue – Driver</span>
+        </div>
+
+        <button id="generate-btn">Generate Document</button>
+    </div>
+
+    <div id="preview-section" class="container">
+        <h2>Document Preview</h2>
+        <!-- Preview would be the same layout but read-only -->
+        <div id="preview-content"></div>
+        <a id="download-link" href="#" download="do-ref.docx">Download Document</a>
+    </div>
+
+    <script>
+        document.getElementById('generate-btn').addEventListener('click', async () => {
+            const data = {
+                serial_no: '10012',  // Hardcoded or make input if needed
+                ref_no: document.getElementById('ref_no').value,
+                po_no: document.getElementById('po_no').value,
+                date: document.getElementById('date').value,
+                collection_details: {
+                    address: document.getElementById('collection_address').value,
+                    contact_person: document.getElementById('collection_contact_person').value,
+                    tel: document.getElementById('collection_tel').value,
+                    date: document.getElementById('collection_date').value,
+                    time: document.getElementById('collection_time').value,
+                    truck_type: document.getElementById('truck_type').value,
+                    truck_number: document.getElementById('truck_number').value,
+                    driver: document.getElementById('driver').value,
+                    date_: document.getElementById('collection_date_').value
+                },
+                delivery_details: {
+                    address: document.getElementById('delivery_address').value,
+                    contact_person: document.getElementById('delivery_contact_person').value,
+                    tel: document.getElementById('delivery_tel').value,
+                    date: document.getElementById('delivery_date').value,
+                    time: document.getElementById('delivery_time').value,
+                    name: document.getElementById('name').value,
+                    id: document.getElementById('id').value,
+                    signature: document.getElementById('signature').value,
+                    date_: document.getElementById('delivery_date_').value
+                },
+                total_packages: document.getElementById('total_packages').value,
+                total_weight: document.getElementById('total_weight').value,
+                cargo_description: document.getElementById('cargo_description').value,
+                cargo_ref: document.getElementById('cargo_ref').value,
+                remarks: document.getElementById('remarks').value
+            };
+
+            try {
+                const response = await fetch('http://localhost:8000/v1/do/docx', {
+                    method: 'POST',
+                    headers: {
+                        "Authorization": `Bearer ${localStorage.getItem("token") || getCookie("access_token")}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to generate document');
+                }
+
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+
+                // Show preview section
+                document.getElementById('preview-section').style.display = 'block';
+
+                // For preview, since DOCX can't be easily embedded, we'll just provide the download link.
+                // To "show without changing format", we can clone the form as read-only.
+                const previewContent = document.querySelector('.container').cloneNode(true);
+                // Make all inputs read-only and remove button
+                previewContent.querySelectorAll('input, textarea').forEach(el => {
+                    el.readOnly = true;
+                    el.style.border = 'none';
+                    el.style.background = 'transparent';
+                });
+                previewContent.querySelector('button').remove();
+                document.getElementById('preview-content').appendChild(previewContent);
+
+                // Set download link
+                document.getElementById('download-link').href = url;
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

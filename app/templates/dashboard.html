@@ -1838,71 +1838,51 @@ loadTotalPayables();
   /* ===========================
   FILTER EVENTS
   =========================== */
-  document
-  .getElementById("payableYear")
-  .addEventListener("change", loadIncomeExpense);
-  document
-  .getElementById("payableQuarter")
-  .addEventListener("change", loadIncomeExpense);
-  
-  document
-  .getElementById("payableYear")
-  .addEventListener("change", loadTopExpenses);
-  document
-  .getElementById("payableQuarter")
-  .addEventListener("change", loadTopExpenses);
-  
-  
-  document
-  .getElementById("payableYear")
-  .addEventListener("change", loadCategoryCreditDebit);
-  document
-  .getElementById("payableQuarter")
-  .addEventListener("change", loadCategoryCreditDebit);
   // document
-  //   .getElementById("incomeYear")
-  //   .addEventListener("change", loadIncomeExpense);
+  // .getElementById("payableYear")
+  // .addEventListener("change", loadIncomeExpense);
   // document
-  //   .getElementById("incomeQuarter")
-  //   .addEventListener("change", loadIncomeExpense);
+  // .getElementById("payableQuarter")
+  // .addEventListener("change", loadIncomeExpense);
   
   // document
-  //   .getElementById("expenseYear")
-  //   .addEventListener("change", loadTopExpenses);
+  // .getElementById("payableYear")
+  // .addEventListener("change", loadTopExpenses);
   // document
-  //   .getElementById("expenseQuarter")
-  //   .addEventListener("change", loadTopExpenses);
+  // .getElementById("payableQuarter")
+  // .addEventListener("change", loadTopExpenses);
   
   
   // document
-  //   .getElementById("incomeYear1")
-  //   .addEventListener("change", loadCategoryCreditDebit);
+  // .getElementById("payableYear")
+  // .addEventListener("change", loadCategoryCreditDebit);
   // document
-  //   .getElementById("incomeQuarter1")
-  //   .addEventListener("change", loadCategoryCreditDebit);
+  // .getElementById("payableQuarter")
+  // .addEventListener("change", loadCategoryCreditDebit);
+  
   
   /* ===========================
   INITIAL LOAD
   =========================== */
-  loadIncomeExpense();
-  loadTopExpenses();
-  loadCategoryCreditDebit()
-  // Load on start
-  loadData();
-  // Load on start
-  loadPayableData();
-  loadPayableAnalysisData();
+  // loadIncomeExpense();
+  // loadTopExpenses();
+  // loadCategoryCreditDebit()
+  // // Load on start
+  // loadData();
+  // // Load on start
+  // loadPayableData();
+  // loadPayableAnalysisData();
   
   // Reload on filter change
-  document.getElementById('payableYear').addEventListener('change', loadPayableData);
-  document.getElementById('payableQuarter').addEventListener('change', loadPayableData);
+  // document.getElementById('payableYear').addEventListener('change', loadPayableData);
+  // document.getElementById('payableQuarter').addEventListener('change', loadPayableData);
   
-  // Reload on filter change
-  document.getElementById('payableYear').addEventListener('change', loadPayableAnalysisData);
-  document.getElementById('payableQuarter').addEventListener('change', loadPayableAnalysisData);
-  // Reload on filter change
-  document.getElementById('payableYear').addEventListener('change', loadData);
-  document.getElementById('payableQuarter').addEventListener('change', loadData);
+  // // Reload on filter change
+  // document.getElementById('payableYear').addEventListener('change', loadPayableAnalysisData);
+  // document.getElementById('payableQuarter').addEventListener('change', loadPayableAnalysisData);
+  // // Reload on filter change
+  // document.getElementById('payableYear').addEventListener('change', loadData);
+  // document.getElementById('payableQuarter').addEventListener('change', loadData);
 </script>
 
 <script>
@@ -2061,6 +2041,6 @@ document.getElementById("totalPending").innerText =
 }
 
 // 🔥 Load chart on page load
-loadCurrentPaymentChart();
+// loadCurrentPaymentChart();
 </script>
 

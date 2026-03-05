@@ -5,7 +5,7 @@
   <!-- Required meta tags -->
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <title>SOA Admin</title>
+  <title>CIPL</title>
   <!-- base:css -->
   <link rel="stylesheet" href="/static/app/vendors/typicons/typicons.css">
   <link rel="stylesheet" href="/static/app/vendors/css/vendor.bundle.base.css">
@@ -531,19 +531,20 @@ function loadApprovalMessages(status = "pending") {
 let approvalInterval = null;
 
 // Always clear first (important for SPA / reloaded scripts)
-if (approvalInterval) {
-  clearInterval(approvalInterval);
+
+// if (approvalInterval) {
+//   clearInterval(approvalInterval);
   approvalInterval = null;
-}
+// }
 
 if (canShowNotification('notification')) {
   console.log('Notification permission: TRUE');
 
-  loadApprovalMessages("pending");
+ //  loadApprovalMessages("pending");
 
-  approvalInterval = setInterval(() => {
-    loadApprovalMessages("pending");
-  }, 50000);
+ //  approvalInterval = setInterval(() => {
+   //  loadApprovalMessages("pending");
+ //  }, 50000);
 
 } else {
   console.log('Notification permission: FALSE');
@@ -856,7 +857,7 @@ document.addEventListener('DOMContentLoaded', function () {
     <nav class="navbar col-lg-12 col-12 p-0 fixed-top d-flex flex-row">
       <div class="navbar-brand-wrapper d-flex justify-content-center">
         <div class="navbar-brand-inner-wrapper d-flex justify-content-between align-items-center w-100">
-          <a class="navbar-brand brand-logo" href="#" onclick="navigate('/app/dashboard'); return false;"><span style="color:white;">SOA</span></a>
+          <a class="navbar-brand brand-logo" href="#" onclick="navigate('/app/dashboard'); return false;"><span style="color:white;">CIPL</span></a>
           <a class="navbar-brand brand-logo-mini" href="#" onclick="navigate('/app/dashboard'); return false;"><span style="color:white;">SOA</span></a>
           <button class="navbar-toggler navbar-toggler align-self-center" type="button" data-toggle="minimize">
             <span class="typcn typcn-th-menu"></span>
@@ -1131,6 +1132,25 @@ document.addEventListener('DOMContentLoaded', function () {
             </a>
           </li>
 
+            
+            <li class="nav-item {% if 'cipl' in request.path %}active{% endif %}">
+
+            <a class="nav-link" href="#"  onclick="navigate('/app/cipl'); return false;">
+              <i class="typcn typcn-cog menu-icon"></i>
+              <span class="menu-title">CIPL-DOCX</span>
+              
+            </a>
+          </li>
+
+          <li class="nav-item {% if 'delivery-order' in request.path %}active{% endif %}">
+
+            <a class="nav-link" href="#"  onclick="navigate('delivery-order'); return false;">
+              <i class="typcn typcn-cog menu-icon"></i>
+              <span class="menu-title">DO-DOCX</span>
+              
+            </a>
+          </li>
+
 
 
 
@@ -1145,6 +1165,8 @@ document.addEventListener('DOMContentLoaded', function () {
             </a>
           </li>
           {% endif %}
+
+
 
 
           <li class="nav-item">
@@ -1168,6 +1190,12 @@ document.addEventListener('DOMContentLoaded', function () {
           {% endif %}
           {% if 'invoicesaging' in request.path %}
             {% extends "invoicesaging.html" %}
+          {% endif %}
+          {% if 'cipl' in request.path %}
+            {% extends "cipl.html" %}
+          {% endif %}
+          {% if 'delivery-order' in request.path %}
+            {% extends "delivery_order.html" %}
           {% endif %}
 
           
