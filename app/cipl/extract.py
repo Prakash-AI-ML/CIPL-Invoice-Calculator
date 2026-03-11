@@ -31,6 +31,10 @@ DESCRIPTION_MAPPING = {
 '6264MM, 14" PCW Header Pipe Spools, North Outer Transport, Drain Valve, Air Vent, APAC, Brooklyn, Fabrication Details':'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=6264 mm, welded assembly, fitted with drain valve and air vent',
 '860MM, 3" PCW Deschutes Extension Wide HAC Pipe Spools APAC Brooklyn, Fabrication Details': 'Fabricated carbon steel process cooling water (PCW) pipe spool, 3", L=860mm',
 '4748MM, 20" PCW Header Pipe Spools, South Outer Transport Drain Valve, Air Vent, Apac, Brooklyn, Fabrication Details':'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=4748 mm, welded assembly, fitted with drain valve and air vent',
+'8" Bray S31H, Butterfly Valve DI Body, 316SS Disc, 416SS Stem, EPDM seat c/w Gear operated': '8” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat',
+'14" Bray S31H, Butterfly Valve DI Body, 316SS Disc, 416SS Stem, EPDM seat c/w Gear operated': '14” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat',
+'20" Bray S31H, Butterfly Valve DI Body, 316SS Disc, 416SS Stem, EPDM seat c/w Gear operated': '20” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat',
+
 }
 
 
@@ -60,6 +64,10 @@ DESCRIPTION_LINE_MAPPING = {
 'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=6264 mm, welded assembly, fitted with drain valve and air vent': 4,
 'Fabricated carbon steel process cooling water (PCW) pipe spool, 3", L=860mm': 3,
 'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=4748 mm, welded assembly, fitted with drain valve and air vent': 4,
+'8” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat': 4,
+'14” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat': 4,
+'20” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat': 4,
+
 }
 
 def clean_dataframe(dic):
@@ -108,7 +116,8 @@ def clean_dataframe(dic):
             'country_of_origin': "" if pd.isnull(country) else country, 
             'quantity': "" if pd.isnull(qty) else f"{qty}",
             'fob_price_sgd': "" if pd.isnull(fob_price) else "$" + (" " * (9 +2 -len(f"{fob_price:,.{2}f}"))) + f"{fob_price:,.{2}f}",
-            'fob_amount_sgd': "" if pd.isnull(fob_amount) else "$" + (" " * (13 + 5 -len(f"{fob_amount:,.{2}f}"))) + f"{fob_amount:,.{2}f}"
+            'fob_amount_sgd': "" if pd.isnull(fob_amount) else "$" + (" " * (13 + 5 -len(f"{fob_amount:,.{2}f}"))) + f"{fob_amount:,.{2}f}",
+            'description_modified': 0
         }
             new_data.append(data_)
     return new_data
@@ -324,7 +333,8 @@ def analysis_cipl(df, df1, divided_by = None):
     for item in modified_items:
         if item['description'] in DESCRIPTION_MAPPING:
             item['description'] = DESCRIPTION_MAPPING[item['description']]
-    print(total_w, type(total_w))
+            item['description_modified'] = 1
+    print(modified_items)
     data = dict(
                 shipper = shipper,
                 importer_of_record = importer_of_record,

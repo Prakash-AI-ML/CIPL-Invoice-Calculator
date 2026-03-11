@@ -8,7 +8,6 @@ import os
 
 from pathlib import Path
 from docx import Document
-print( Path(__file__))
 BASE_DIR = Path(__file__).resolve().parent.parent
 file_path = BASE_DIR / "static" / "app" / "CIPL ES-00096_.docx"
 
@@ -67,7 +66,7 @@ def set_cell_borders(cell, top=None, bottom=None, left=None, right=None):
     tcPr.append(borders)
 
 
-def write_cell(cell, text, bold=False, align=WD_ALIGN_PARAGRAPH.LEFT, width=None, add_para=True, header = False, indent = -0.2, right_indent = -0.2):
+def write_cell(cell, text, bold=False, align=WD_ALIGN_PARAGRAPH.LEFT, width=None, add_para=True, header = False, indent = -0.2, right_indent = -0.2, color="black" ):
     # Set cell width
     if width:
         cell.width = Cm(width)
@@ -88,6 +87,12 @@ def write_cell(cell, text, bold=False, align=WD_ALIGN_PARAGRAPH.LEFT, width=None
     run.bold = bold
     run.font.name = "Arial"
     run.font.size = Pt(9)
+    # Default black, optional red
+    if color.lower() == "red":
+        run.font.color.rgb = RGBColor(255, 0, 0)
+    else:
+        run.font.color.rgb = RGBColor(0, 0, 0)
+
     run._element.rPr.rFonts.set(qn('w:eastAsia'), "Arial")
     p.alignment = align
 
@@ -453,14 +458,19 @@ def add_items_table(doc, items, packing_details, total):
     for row in items:
         cells = table.add_row().cells
         for i, val in enumerate(row.values()):
+            if i  >7:
+                break
             align = WD_ALIGN_PARAGRAPH.LEFT if i == 1 else WD_ALIGN_PARAGRAPH.CENTER
             indent = 0 if i == 1 else -0.2
             if i >= 6 and val:
                 write_amount(cells[i], val.replace('$','').strip(), width=col_widths[i])
                 continue
+            if i == 1 and val and row['description_modified'] != 1:
+
+                write_cell(cells[i], val, align=align, width=col_widths[i], indent= indent, color = 'red')
             else:
                 write_cell(cells[i], val, align=align, width=col_widths[i], indent= indent)
-
+            
     num_rows = len(items)
     for idx, row in enumerate(table.rows):
         if idx == 0:

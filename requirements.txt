@@ -28,3 +28,4 @@ xlrd
 docx2pdf
 spire-doc
 xlsxwriter
+pdfplumber
