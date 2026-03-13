@@ -11,7 +11,7 @@
       color: #0d6efd;
     }
   </style>
-
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/dripicons/2.0.0/webfont.css">
   <h2 class="mb-4">Settings</h2> 
   <div class="row g-3">  
 
@@ -68,6 +68,20 @@
           <div class="card-body"  style="padding: 10px;">
             <i class="mdi1 mdi mdi-store" style="font-size: 40px;color: #844fc1;"></i>
             <h5 class="card-title mt-2" style="font-size: 20px;color: #844fc1;">Category</h5>
+          </div>
+        </div>
+      </a>
+    </div>
+    {% endif %}
+
+    {% set settings_buttons = request.state.user.menus['settings']['buttons'] %}
+    {% if 'categories_view' in settings_buttons | map(attribute='button_name') | list %}
+    <div class="col-md-3 col-sm-6">
+      <a  href="#" onclick="navigate('/app/settings/descriptions'); return false;" class="text-decoration-none">
+        <div class="card text-center shadow-sm" style="padding: 10px;">
+          <div class="card-body"  style="padding: 10px;">
+            <i class="dripicons-document" style="font-size: 40px;color: #844fc1;"></i>
+            <h5 class="card-title mt-2" style="font-size: 20px;color: #844fc1;">CIPL DESCRIPTION</h5>
           </div>
         </div>
       </a>
