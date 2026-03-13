@@ -386,12 +386,24 @@ async def user_list(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-
+@app.get("/app/tally", response_class=HTMLResponse)
+async def tally_page(request: Request):
+    description = "Navigated to Users page from tally"
+    await logs(request = request, endpoint='/app/tally', action= 'tally', description= description, is_backend= False)
+    logger.info(f"Navigated to Users page from tally by user: {request.state.user.get('username', 'unknown')}")
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/app/settings/users_list", response_class=HTMLResponse)
 async def user_list(request: Request):
     description = "Navigated to Users page from Settings"
     await logs(request = request, endpoint='/app/settings/users_list', action= 'users_list', description= description, is_backend= False)
+    logger.info(f"Navigated to Users page from Settings by user: {request.state.user.get('username', 'unknown')}")
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/app/settings/descriptions", response_class=HTMLResponse)
+async def user_list(request: Request):
+    description = "Navigated to Users page from Settings"
+    await logs(request = request, endpoint='/app/settings/cipl-descriptions', action= 'cipl-descriptions', description= description, is_backend= False)
     logger.info(f"Navigated to Users page from Settings by user: {request.state.user.get('username', 'unknown')}")
     return templates.TemplateResponse("index.html", {"request": request})
 
