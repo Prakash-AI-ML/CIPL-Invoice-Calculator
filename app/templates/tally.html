@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Tally Sheet Generator</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS (community edition - full version supports more formatting) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        .drop-active { border-color: #3b82f6; background-color: #eff6ff; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
+
+    <div class="container mx-auto px-4 py-10 max-w-5xl">
+
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-slate-800 mb-2">Tally Sheet Generator</h1>
+            <p class="text-slate-600">Upload ORIGINAL and FINAL Word documents (.docx)</p>
+        </header>
+
+        <!-- Messages -->
+        <div id="message" class="hidden mb-6 p-4 rounded-lg text-center font-medium"></div>
+
+        <div class="grid md:grid-cols-2 gap-8 mb-10">
+
+            <!-- Original Files -->
+            <div class="bg-white rounded-xl shadow border border-slate-200 p-6">
+                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 text-blue-700">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    Original Files
+                </h2>
+
+                <div id="original-dropzone"
+                     class="border-2 border-dashed border-slate-300 rounded-lg p-10 text-center cursor-pointer transition-all hover:border-blue-400">
+                    <i data-lucide="upload" class="w-12 h-12 mx-auto text-slate-400 mb-4"></i>
+                    <p class="text-slate-700 font-medium">Drag & drop or click to select</p>
+                    <p class="text-sm text-slate-500 mt-1">Multiple .docx files allowed</p>
+                    <input type="file" id="original-input" multiple accept=".docx" class="hidden" />
+                </div>
+
+                <div id="original-list" class="mt-4 max-h-40 overflow-y-auto text-sm text-slate-600"></div>
+            </div>
+
+            <!-- Final Files -->
+            <div class="bg-white rounded-xl shadow border border-slate-200 p-6">
+                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2 text-green-700">
+                    <i data-lucide="file-check" class="w-5 h-5"></i>
+                    Final Files
+                </h2>
+
+                <div id="final-dropzone"
+                     class="border-2 border-dashed border-slate-300 rounded-lg p-10 text-center cursor-pointer transition-all hover:border-green-400">
+                    <i data-lucide="upload" class="w-12 h-12 mx-auto text-slate-400 mb-4"></i>
+                    <p class="text-slate-700 font-medium">Drag & drop or click to select</p>
+                    <p class="text-sm text-slate-500 mt-1">Multiple .docx files allowed</p>
+                    <input type="file" id="final-input" multiple accept=".docx" class="hidden" />
+                </div>
+
+                <div id="final-list" class="mt-4 max-h-40 overflow-y-auto text-sm text-slate-600"></div>
+            </div>
+        </div>
+
+        <!-- Generate Button -->
+        <div class="text-center">
+            <button id="generate-btn"
+                    class="inline-flex items-center gap-3 px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-lg disabled:bg-slate-400 disabled:cursor-not-allowed transition-all text-lg">
+                <i data-lucide="file-down" class="w-5 h-5"></i>
+                Generate Tally Sheet
+            </button>
+            <div id="loading" class="hidden mt-4 text-slate-600 flex items-center justify-center gap-2">
+                <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>
+                Generating... Please wait
+            </div>
+        </div>
+
+        <!-- Preview Area - hidden by default -->
+<div id="preview-container" class="hidden mt-12">
+    <h2 class="text-2xl font-bold text-center mb-6 text-slate-800">Tally Sheet Preview</h2>
+    
+    <div class="flex justify-center mb-6">
+        <div class="inline-flex rounded-md shadow-sm" role="group">
+            <button id="btn-packing" class="px-6 py-3 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-l-lg hover:bg-blue-700 focus:z-10">
+                ORDINARY
+            </button>
+            <button id="btn-financial" class="px-6 py-3 text-sm font-medium text-blue-600 bg-white border border-blue-600 rounded-r-lg hover:bg-gray-100 focus:z-10">
+                COMMERCIAL
+            </button>
+        </div>
+    </div>
+
+    <div id="preview-content" class="bg-white rounded-xl shadow-lg p-6 overflow-x-auto border border-slate-200 min-h-[400px]">
+        <p class="text-center text-slate-500 italic">Generating preview...</p>
+    </div>
+
+    <div class="text-center mt-8">
+        <button id="download-from-preview" class="inline-flex items-center gap-2 px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg transition-all">
+            <i data-lucide="download" class="w-5 h-5"></i>
+            Download TALLY_SHEET.xlsx
+        </button>
+    </div>
+</div>
+
+    </div>
+<!-- 
+    <script>
+
+        // app/static/js/main.js
+
+document.addEventListener('DOMContentLoaded', () => {
+    const originalDrop = document.getElementById('original-dropzone');
+    const originalInput = document.getElementById('original-input');
+    const originalList = document.getElementById('original-list');
+
+    const finalDrop = document.getElementById('final-dropzone');
+    const finalInput = document.getElementById('final-input');
+    const finalList = document.getElementById('final-list');
+
+    const generateBtn = document.getElementById('generate-btn');
+    const loading = document.getElementById('loading');
+    const messageEl = document.getElementById('message');
+
+    let originalFiles = [];
+    let finalFiles = [];
+
+    // Helper: show message
+    function showMessage(text, type = 'error') {
+        messageEl.textContent = text;
+        messageEl.className = `p-4 rounded-lg text-center font-medium ${
+            type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+        }`;
+        messageEl.classList.remove('hidden');
+        setTimeout(() => messageEl.classList.add('hidden'), 8000);
+    }
+
+    // File list renderer
+    function renderFileList(container, files) {
+        container.innerHTML = '';
+        if (files.length === 0) {
+            container.innerHTML = '<p class="text-slate-500 italic">No files selected yet</p>';
+            return;
+        }
+        const ul = document.createElement('ul');
+        ul.className = 'space-y-1';
+        files.forEach((file, i) => {
+            const li = document.createElement('li');
+            li.textContent = file.name;
+            ul.appendChild(li);
+        });
+        container.appendChild(ul);
+    }
+
+    // Drop zone events
+    function setupDropZone(dropzone, input, list, filesArray) {
+        dropzone.addEventListener('click', () => input.click());
+
+        dropzone.addEventListener('dragover', e => {
+            e.preventDefault();
+            dropzone.classList.add('drop-active');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('drop-active');
+        });
+
+        dropzone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropzone.classList.remove('drop-active');
+            const droppedFiles = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.docx'));
+            if (droppedFiles.length > 0) {
+                filesArray.length = 0;
+                filesArray.push(...droppedFiles);
+                renderFileList(list, filesArray);
+            }
+        });
+
+        input.addEventListener('change', e => {
+            const selected = Array.from(e.target.files);
+            filesArray.length = 0;
+            filesArray.push(...selected);
+            renderFileList(list, filesArray);
+        });
+    }
+
+    setupDropZone(originalDrop, originalInput, originalList, originalFiles);
+    setupDropZone(finalDrop, finalInput, finalList, finalFiles);
+
+    // Generate button
+    generateBtn.addEventListener('click', async () => {
+        if (originalFiles.length === 0 || finalFiles.length === 0) {
+            showMessage('Please select at least one Original and one Final file.');
+            return;
+        }
+
+        generateBtn.disabled = true;
+        loading.classList.remove('hidden');
+
+        const formData = new FormData();
+        originalFiles.forEach(file => formData.append('original_files', file));
+        finalFiles.forEach(file => formData.append('final_files', file));
+
+        try {
+            const response = await fetch('/v1/tally-sheet/generate', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Generation failed');
+            }
+
+            // Download file
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'TALLY_SHEET.xlsx';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+            showMessage('Tally sheet generated successfully!', 'success');
+
+        } catch (err) {
+            showMessage(err.message || 'Something went wrong. Please try again.');
+        } finally {
+            generateBtn.disabled = false;
+            loading.classList.add('hidden');
+        }
+    });
+});
+    </script> -->
+
+<script>
+
+document.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+
+    const originalDrop = document.getElementById('original-dropzone');
+    const originalInput = document.getElementById('original-input');
+    const originalList = document.getElementById('original-list');
+
+    const finalDrop = document.getElementById('final-dropzone');
+    const finalInput = document.getElementById('final-input');
+    const finalList = document.getElementById('final-list');
+
+    const generateBtn = document.getElementById('generate-btn');
+    const loading = document.getElementById('loading');
+    const messageEl = document.getElementById('message');
+
+    const previewContainer = document.getElementById('preview-container');
+    const previewContent = document.getElementById('preview-content');
+    const btnPacking = document.getElementById('btn-packing');
+    const btnFinancial = document.getElementById('btn-financial');
+    const downloadFromPreview = document.getElementById('download-from-preview');
+
+    let originalFiles = [];
+    let finalFiles = [];
+    let generatedBlob = null;           // ← keep blob to allow re-download
+    let workbook = null;                // ← parsed XLSX
+
+    function showMessage(text, type = 'error') {
+        messageEl.textContent = text;
+        messageEl.className = `p-4 rounded-lg text-center font-medium ${
+            type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'
+        }`;
+        messageEl.classList.remove('hidden');
+        setTimeout(() => messageEl.classList.add('hidden'), 10000);
+    }
+
+    function renderFileList(container, files) {
+        container.innerHTML = files.length === 0 
+            ? '<p class="text-slate-500 italic">No files selected yet</p>'
+            : '<ul class="space-y-1">' + files.map(f => `<li>${f.name}</li>`).join('') + '</ul>';
+    }
+
+    function setupDropZone(dropzone, input, list, filesArray) {
+        dropzone.addEventListener('click', () => input.click());
+        dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drop-active'); });
+        dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drop-active'));
+        dropzone.addEventListener('drop', e => {
+            e.preventDefault(); dropzone.classList.remove('drop-active');
+            const dropped = Array.from(e.dataTransfer.files).filter(f => f.name.toLowerCase().endsWith('.docx'));
+            if (dropped.length) {
+                filesArray.splice(0, filesArray.length, ...dropped);
+                renderFileList(list, filesArray);
+            }
+        });
+        input.addEventListener('change', e => {
+            const sel = Array.from(e.target.files);
+            filesArray.splice(0, filesArray.length, ...sel);
+            renderFileList(list, filesArray);
+        });
+    }
+
+    setupDropZone(originalDrop, originalInput, originalList, originalFiles);
+    setupDropZone(finalDrop, finalInput, finalList, finalFiles);
+
+    // ── Generate & Preview ──────────────────────────────────────
+    generateBtn.addEventListener('click', async () => {
+        if (originalFiles.length === 0 || finalFiles.length === 0) {
+            showMessage('Please select at least one Original and one Final file.');
+            return;
+        }
+
+        generateBtn.disabled = true;
+        loading.classList.remove('hidden');
+        previewContent.innerHTML = '<p class="text-center text-slate-500 italic py-10">Generating preview...</p>';
+
+        const formData = new FormData();
+        originalFiles.forEach(f => formData.append('original_files', f));
+        finalFiles.forEach(f => formData.append('final_files', f));
+
+        try {
+            const response = await fetch('/v1/tally-sheet/generate', {   // ← your real path
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                let errText = await response.text();
+                throw new Error(errText || 'Generation failed');
+            }
+
+            generatedBlob = await response.blob();
+
+            // Parse with SheetJS
+            const arrayBuffer = await generatedBlob.arrayBuffer();
+            workbook = XLSX.read(arrayBuffer, { type: 'array' });
+
+            // Show preview UI
+            previewContainer.classList.remove('hidden');
+            showSheet('ORDINARY');   // default show Packing
+
+            showMessage('Tally sheet ready! Scroll down to preview.', 'success');
+
+        } catch (err) {
+            showMessage(err.message || 'Something went wrong. Please check files and try again.');
+            previewContainer.classList.add('hidden');
+        } finally {
+            generateBtn.disabled = false;
+            loading.classList.add('hidden');
+        }
+    });
+
+    // ── Tab switching ────────────────────────────────────────────
+    function showSheet(sheetName) {
+        if (!workbook || !workbook.Sheets[sheetName]) {
+            previewContent.innerHTML = '<p class="text-red-600 text-center py-10">Sheet not found</p>';
+            return;
+        }
+
+        const ws = workbook.Sheets[sheetName];
+        let html = XLSX.utils.sheet_to_html(ws);
+
+        // Post-process to improve style
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const table = doc.querySelector('table');
+
+        if (table) {
+            table.className = 'w-full border-collapse text-sm';
+            
+            // Headers
+            table.querySelectorAll('tr:first-child td').forEach(td => {
+                td.className = 'border bg-slate-100 font-semibold p-3 text-center whitespace-pre-line leading-tight';
+            });
+
+            // Data rows + detect total row (last data row usually)
+            const rows = table.querySelectorAll('tr:not(:first-child)');
+            rows.forEach((tr, idx) => {
+                const isLast = idx === rows.length - 1;
+                tr.querySelectorAll('td').forEach((td, colIdx) => {
+                    td.className = 'border p-3 ' + 
+                        (isLast ? 'font-bold bg-slate-50 ' : '') +
+                        (colIdx >= 3 ? 'text-right ' : 'text-left ') + 
+                        (colIdx === 1 ? 'whitespace-pre-line leading-relaxed' : '');
+                });
+            });
+        }
+
+        previewContent.innerHTML = '';
+        previewContent.appendChild(table || doc.body.firstChild);
+    }
+
+    btnPacking.addEventListener('click', () => {
+        btnPacking.classList.add('bg-blue-600', 'text-white');
+        btnPacking.classList.remove('bg-white', 'text-blue-600');
+        btnFinancial.classList.add('bg-white', 'text-blue-600');
+        btnFinancial.classList.remove('bg-blue-600', 'text-white');
+        showSheet('ORDINARY');
+    });
+
+    btnFinancial.addEventListener('click', () => {
+        btnFinancial.classList.add('bg-blue-600', 'text-white');
+        btnFinancial.classList.remove('bg-white', 'text-blue-600');
+        btnPacking.classList.add('bg-white', 'text-blue-600');
+        btnPacking.classList.remove('bg-blue-600', 'text-white');
+        showSheet('COMMERCIAL');
+    });
+
+    // Re-download
+    downloadFromPreview.addEventListener('click', () => {
+        if (!generatedBlob) return;
+        const url = URL.createObjectURL(generatedBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'TALLY_SHEET.xlsx';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+});
+</script>
+
+    <script>
+        lucide.createIcons();
+    </script>
+
+</body>
+</html>
