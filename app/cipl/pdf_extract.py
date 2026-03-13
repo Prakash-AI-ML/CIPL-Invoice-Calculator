@@ -4,71 +4,6 @@ import re
 from datetime import datetime
 import pdfplumber
 
-DESCRIPTION_MAPPING = {
-'5400MM, 14" PCW Header Pipe Spools, North Outer Transport, Straight, APAC, Brooklyn, Fabrication Details': 'Fabricated carbon steel process cooling water (PCW) header pipe spool, 14", L=5400mm, welded assembly',
-'3992MM, 20" PCW Header Pipe Spools, South Outer Transport, Active, APAC, Brooklyn, MDA, Fabrication Details': 'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=3992mm, welded assembly',
-'6399MM, 14" PCW Header Pipe Spools, North Outer Transport, Active, APAC Brooklyn, MDA, Fabrication Details': 'Fabricated carbon steel process cooling water (PCW) header pipe spool, 14", L=6399mm, welded assembly',
-'6399MM, 20" PCW Header Pipe Spools, South Outer Transport, Active, APAC Brooklyn, MDA, Fabrication Details': 'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L= 6399mm welded assembly',
-'860MM, 3" PCW Deschutes Extension Wide HAC Pipe Spools, APAC Brooklyn, Fabrication Details': 'Fabricated carbon steel process cooling water (PCW) pipe spool, 3", L=860mm',
-'Support Deschutes Extension, Wide HAC': 'Fabricated carbon steel pipe support extension',
-'Kit, Ship Loose, Mechanical, NA, Brooklyn General Arrangement 1.0.3': 'Fabricated carbon steel mechanical piping components supplied as loose shipment, for industrial piping system installation',
-'4" & 3" Deschutes PCW Extension Fabrication & Assembly Details Brooklyn 1.5': 'Fabricated carbon steel process cooling water (PCW) extension pipe assembly, 4" & 3", welded and assembled section',
-'4" & 3" Deschutes PCW Extension Fabrication & Assembly Details Brooklyn 1.5': 'Fabricated carbon steel process cooling water (PCW) extension pipe assembly, 4" & 3", welded and assembled section',
-'8" PCW Ladder Pipe Spool, Rhino Connection, APAC, Brooklyn, Fabrication Details': 'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, for industrial piping system installation',	
-'8" PCW Ladder Pipe Spool, Rhino Connection (Mechanical End), APAC Brooklyn, Fabrication Details': 'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, mechanical end, welded assembly',
-'8" PCW Ladder Pipe Spool, Rhino Connection with Deschutes - Electrical End, APAC, Brooklyn, Fabrication Details' : 'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter with extension section, welded assembly',
-'8" PCW Ladder Pipe Spool, South Outer TA, APAC, Brooklyn, Fabrication Details':'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, welded industrial piping section',
-'8" PCW Ladder Pipe Spool, North Outer TA, APAC, Brooklyn, Fabrication Details' : 'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, welded industrial piping section',
-'8" PCW Ladder Pipe Spool, No Rhino Connection, MDA, APAC Brooklyn, Fabrication Details' : 'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, welded assembly',
-'8" PCW Ladder Pipe Spool, No Rhino Connection, Elect End, MDA, APAC Brooklyn, Fabrication Details' : 'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, welded assembly',	
-'8" PCW Ladder Pipe Spool, MID TA, APAC, Brooklyn, Fabrication Details' : 'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, welded industrial piping section',
-'Kit, Ship Loose, Mechanical, NA, Brooklyn General Arrangement 1.0.3':'Fabricated carbon steel mechanical piping components supplied as loose shipment, for industrial piping system installation',
-'Cooling Module Connection South' : 'Fabricated carbon steel pipe, cooling module connection',
-'5397MM, 20" PCW Header Pipe Spools, South Outer Transport Drain Valve, Air Vent, Apac, Brooklyn, Fabrication Details':'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=5397 mm, welded assembly, fitted with drain valve and air vent',
-'4372MM, 20" PCW Header Pipe Spools, South Outer Transport Drain Valve, Air Vent, Apac, Brooklyn, Fabrication Details':'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=4372 mm, welded assembly, fitted with drain valve and air vent',
-'5612MM, 20" PCW Header Pipe Spools, South Outer Transport Drain Valve, Air Vent, Apac, Brooklyn, Fabrication Details':'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=5612 mm, welded assembly, fitted with drain valve and air vent',
-'6264MM, 14" PCW Header Pipe Spools, North Outer Transport, Drain Valve, Air Vent, APAC, Brooklyn, Fabrication Details':'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=6264 mm, welded assembly, fitted with drain valve and air vent',
-'860MM, 3" PCW Deschutes Extension Wide HAC Pipe Spools APAC Brooklyn, Fabrication Details': 'Fabricated carbon steel process cooling water (PCW) pipe spool, 3", L=860mm',
-'4748MM, 20" PCW Header Pipe Spools, South Outer Transport Drain Valve, Air Vent, Apac, Brooklyn, Fabrication Details':'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=4748 mm, welded assembly, fitted with drain valve and air vent',
-'8" Bray S31H, Butterfly Valve DI Body, 316SS Disc, 416SS Stem, EPDM seat c/w Gear operated': '8” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat',
-'14" Bray S31H, Butterfly Valve DI Body, 316SS Disc, 416SS Stem, EPDM seat c/w Gear operated': '14” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat',
-'20" Bray S31H, Butterfly Valve DI Body, 316SS Disc, 416SS Stem, EPDM seat c/w Gear operated': '20” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat',
-}
-
-
-
-DESCRIPTION_LINE_MAPPING = {
-'Fabricated carbon steel process cooling water (PCW) header pipe spool, 14", L=5400mm, welded assembly': 3,
-'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=3992mm, welded assembly': 3,
-'Fabricated carbon steel process cooling water (PCW) header pipe spool, 14", L=6399mm, welded assembly': 3,
-'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=6399mm welded assembly': 3,
-'Fabricated carbon steel process cooling water (PCW) pipe spool, 3", L=860mm': 3,
-'Fabricated carbon steel pipe support extension': 2,
-'Fabricated carbon steel mechanical piping components supplied as loose shipment, for industrial piping system installation': 4,
-'Fabricated carbon steel process cooling water (PCW) extension pipe assembly, 4" & 3", welded and assembled section': 3,
-'Fabricated carbon steel process cooling water (PCW) extension pipe assembly, 4" & 3", welded and assembled section': 3,
-'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, for industrial piping system installation': 4,	
-'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, mechanical end, welded assembly': 3,
-'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter with extension section, welded assembly': 4,
-'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, welded industrial piping section': 3,
-'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, welded industrial piping section': 3,
-'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, welded assembly': 3,
-'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, welded assembly': 3,	
-'Fabricated carbon steel process cooling water (PCW) ladder pipe spool, 8" diameter, welded industrial piping section': 3,
-'Fabricated carbon steel mechanical piping components supplied as loose shipment, for industrial piping system installation': 4,
-'Fabricated carbon steel pipe, cooling module connection': 2,
-'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=5397 mm, welded assembly, fitted with drain valve and air vent': 4,
-'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=4372 mm, welded assembly, fitted with drain valve and air vent': 4,
-'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=5612 mm, welded assembly, fitted with drain valve and air vent': 4,
-'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=6264 mm, welded assembly, fitted with drain valve and air vent': 4,
-'Fabricated carbon steel process cooling water (PCW) pipe spool, 3", L=860mm': 3,
-'Fabricated carbon steel process cooling water (PCW) header pipe spool, 20", L=4748 mm, welded assembly, fitted with drain valve and air vent': 4,
-'8” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat': 4,
-'14” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat': 4,
-'20” Industrial butterfly valve, gear operated, for pipeline fluid control, ductile iron body, stainless steel disc and stem, EPDM seat': 4,
-
-}
-
 
 def regex(raw_text):
     lines = raw_text.split("\n")
@@ -116,51 +51,6 @@ def calculate_cbm(lines):
     return round(total_cbm, 2)
 
 
-
-
-def get_final_recalculate_data1(df_transactions, divided_by):
-    total_amount = 0
-    # print(df_transactions.columns)
-    if 'PRICE SGD' in df_transactions.columns:
-        df_transactions = df_transactions.rename(columns={
-                            'PRICE SGD': 'FOB PRICE SGD'
-                        })
-    if 'AMOUNT SGD' in df_transactions.columns:
-        df_transactions = df_transactions.rename(columns={
-                            'AMOUNT SGD': 'FOB AMOUNT SGD'
-                        })
-        
-    df_transactions.columns = [col.replace('_', " ").upper() for col in df_transactions.columns]
-    df_transactions["FOB PRICE SGD"] = pd.to_numeric(
-        df_transactions["FOB PRICE SGD"]
-        .astype(str)
-        .str.replace(r"[^\d.-]", "", regex=True),
-        errors="coerce"
-    )
-
-    df_transactions["FOB AMOUNT SGD"] = pd.to_numeric(
-        df_transactions["FOB AMOUNT SGD"]
-        .astype(str)
-        .str.replace(r"[^\d.-]", "", regex=True),
-        errors="coerce"
-    )
-    df_transactions['QUANTITY'] = (
-        pd.to_numeric(df_transactions['QUANTITY'], errors="coerce")
-        .fillna(0)
-        .astype(int)
-    )
-    for row in df_transactions.iterrows():
-        if pd.isna(row[1]['FOB PRICE SGD']) or row[1]['FOB PRICE SGD'] == None:
-
-            row[1]['QUANTITY'] = None
-            pass
-        else:
-            row[1]['FOB PRICE SGD'] = round(row[1]['FOB PRICE SGD'] / divided_by, 2)
-            row[1]['FOB AMOUNT SGD'] = round(row[1]['FOB PRICE SGD'] * row[1]['QUANTITY'], 2)
-
-            total_amount += row[1]['FOB AMOUNT SGD']
-    return df_transactions, round(total_amount, 2)
-
 def get_final_recalculate_data(data, divided_by):
     total_amount = 0.0
     
@@ -189,16 +79,21 @@ def get_final_recalculate_data(data, divided_by):
 
     return data, round(total_amount, 2)
 
-def get_line_count(data):
+def get_line_count(data, DESCRIPTIONS_DATA):
     count = 0
     for item in data['items']:
         if item['description'].startswith('ROW'):
-            count +=1
+            count +=2
         if item['description'].startswith('MDA'):
-            count +=1
-        elif item['description'] in DESCRIPTION_LINE_MAPPING:
-            count += DESCRIPTION_LINE_MAPPING[item['description']]
-
+            count +=2
+        # elif item['description'] in DESCRIPTION_LINE_MAPPING:
+        #     count += DESCRIPTION_LINE_MAPPING[item['description']]
+        elif item['description'] in DESCRIPTIONS_DATA['original']:
+            idx = DESCRIPTIONS_DATA['original'].index(item['description'])
+            count += DESCRIPTIONS_DATA['lines'][idx] + 1
+        elif item['gpn'] in DESCRIPTIONS_DATA['item_id']:
+            idx = DESCRIPTIONS_DATA['item_id'].index(item['gpn'])
+            count += DESCRIPTIONS_DATA['lines'][idx] + 1
         else:
             count +=3
     if data['packing_details']:
@@ -401,6 +296,7 @@ def get_table_items(table, table_name= 'packing_details', divided_by = None):
             items.append(item)
         
         if divided_by:
+            print(divided_by)
             items, total_amount = get_final_recalculate_data(items, divided_by)
          
             
@@ -520,7 +416,7 @@ def analysis_pl(page,  divided_by = None):
 
 
 
-def analysis_ci(page,  divided_by = None):
+def analysis_ci(page, DESCRIPTIONS_DATA, divided_by = None):
     table = page.extract_table()
     words = page.extract_words()
     lines = [line['text'] for line  in page.extract_text_lines()]
@@ -535,15 +431,24 @@ def analysis_ci(page,  divided_by = None):
     # total_w = f'{int(total_w.replace(',', '')):,}'
 
     if divided_by == None:
-        total = float(table[8][-1].replace('$', '').replace(',', '').strip())
+        total = float(table[8][-1].replace('$', '').replace(',', '').replace(' ', '').strip())
     else:
         total = total_amount
 
 
     for item in modified_items:
-        if item['description'] in DESCRIPTION_MAPPING:
-            item['description'] = DESCRIPTION_MAPPING[item['description']]
+        DESCRIPTIONS_DATA
+        if item['description'] in DESCRIPTIONS_DATA['original']:
+            idx = DESCRIPTIONS_DATA['original'].index(item['description'])
+            item['description'] = DESCRIPTIONS_DATA['modified'][idx]
             item['description_modified'] = 1
+        elif item['gpn'] in DESCRIPTIONS_DATA['item_id']:
+            idx = DESCRIPTIONS_DATA['item_id'].index(item['gpn'])
+            item['description'] = DESCRIPTIONS_DATA['modified'][idx]
+            item['description_modified'] = 1
+        # if item['description'] in DESCRIPTION_MAPPING:
+        #     item['description'] = DESCRIPTION_MAPPING[item['description']]
+        #     item['description_modified'] = 1
         if 'ROW' in item['description']:
             item['description_modified'] = 1
   
@@ -581,16 +486,16 @@ def analysis_ci(page,  divided_by = None):
     return data
 
 
-def analysis_pdf_cipl(page,  divided_by = None):
+def analysis_pdf_cipl(page,  DESCRIPTIONS_DATA, divided_by = None):
     table = page.extract_table()
     invoice_type = table[0][3]
     if invoice_type == 'COMMERCIAL INVOICE':
-        data = analysis_ci(page,  divided_by = divided_by)
+        data = analysis_ci(page, DESCRIPTIONS_DATA = DESCRIPTIONS_DATA, divided_by = divided_by)
     else:
         data = analysis_pl(page,  divided_by = divided_by)
     return data
 
-def create_cipl_data(results):
+def create_cipl_data(results, DESCRIPTIONS_DATA):
     data = {}
     for key, res in results['commercial_invoice'].items():
         if key in results['packing_list']:
@@ -599,7 +504,7 @@ def create_cipl_data(results):
             res['original_packing_details'] = results['packing_list'][key]['original_packing_details'] 
             res['totals'] = results['packing_list'][key]['totals'] 
 
-            res = get_line_count(res)
+            res = get_line_count(res, DESCRIPTIONS_DATA)
             data[key] = res
             
     

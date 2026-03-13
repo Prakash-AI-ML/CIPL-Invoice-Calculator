@@ -1150,7 +1150,14 @@ document.addEventListener('DOMContentLoaded', function () {
               
             </a>
           </li>
+          <li class="nav-item {% if 'tally' in request.path %}active{% endif %}">
 
+            <a class="nav-link" href="#"  onclick="navigate('/app/tally'); return false;">
+              <i class="typcn typcn-cog menu-icon"></i>
+              <span class="menu-title">TALLY</span>
+              
+            </a>
+          </li>
 
 
 
@@ -1191,13 +1198,18 @@ document.addEventListener('DOMContentLoaded', function () {
           {% if 'invoicesaging' in request.path %}
             {% extends "invoicesaging.html" %}
           {% endif %}
+          {% if 'descriptions' in request.path %}
+            {% extends "cipl_desc.html" %}
+          {% endif %}
           {% if 'cipl' in request.path %}
             {% extends "cipl.html" %}
           {% endif %}
           {% if 'delivery-order' in request.path %}
             {% extends "delivery_order.html" %}
           {% endif %}
-
+          {% if 'tally' in request.path %}
+            {% extends "tally.html" %}
+          {% endif %}
           
            {% if 'profile' in request.path %}
             {% extends "profile.html" %}

@@ -289,15 +289,22 @@ def get_table_items(df, table= 'packing_details', divided_by = None):
     return clean_dataframe(dic), total_amount
 
 
-def get_line_count(data):
+def get_line_count(data, DESCRIPTIONS_DATA):
     count = 0
     for item in data['items']:
         if item['description'].startswith('ROW'):
             count +=1
         if item['description'].startswith('MDA'):
             count +=1
-        elif item['description'] in DESCRIPTION_LINE_MAPPING:
-            count += DESCRIPTION_LINE_MAPPING[item['description']]
+        # elif item['description'] in DESCRIPTION_LINE_MAPPING:
+        #     count += DESCRIPTION_LINE_MAPPING[item['description']]
+        elif item['description'] in DESCRIPTIONS_DATA['original']:
+            idx = DESCRIPTIONS_DATA['original'].index(item['description'])
+            count += DESCRIPTIONS_DATA['lines'][idx] + 1
+        elif item['gpn'] in DESCRIPTIONS_DATA['item_id']:
+            idx = DESCRIPTIONS_DATA['item_id'].index(item['gpn'])
+            count += DESCRIPTIONS_DATA['lines'][idx] + 1
+        
 
         else:
             count +=2
@@ -313,7 +320,7 @@ def get_line_count(data):
 
     return data
 
-def analysis_cipl(df, df1, divided_by = None):
+def analysis_cipl(df, df1, DESCRIPTIONS_DATA, divided_by = None):
 
     shipper, importer_of_record, ship_to, reference_no, reference_date, port_loading, port_discharge, po_no, po_no_date = get_data(df)
     original_pcks, modified_pcks, total_pcks, total_w, gross_w, is_total_weight_verfy = get_packing_details(df)
@@ -331,10 +338,20 @@ def analysis_cipl(df, df1, divided_by = None):
 
 
     for item in modified_items:
-        if item['description'] in DESCRIPTION_MAPPING:
-            item['description'] = DESCRIPTION_MAPPING[item['description']]
+        # if item['description'] in DESCRIPTION_MAPPING:
+        #     item['description'] = DESCRIPTION_MAPPING[item['description']]
+        #     item['description_modified'] = 1
+        if item['description'] in DESCRIPTIONS_DATA['original']:
+            idx = DESCRIPTIONS_DATA['original'].index(item['description'])
+            item['description'] = DESCRIPTIONS_DATA['modified'][idx]
             item['description_modified'] = 1
-    print(modified_items)
+        elif item['gpn'] in DESCRIPTIONS_DATA['item_id']:
+            idx = DESCRIPTIONS_DATA['item_id'].index(item['gpn'])
+            item['description'] = DESCRIPTIONS_DATA['modified'][idx]
+            item['description_modified'] = 1
+        if 'ROW' in item['description']:
+            item['description_modified'] = 1
+    
     data = dict(
                 shipper = shipper,
                 importer_of_record = importer_of_record,
@@ -374,7 +391,7 @@ def analysis_cipl(df, df1, divided_by = None):
     )
     data['packing_details']['shipping'] =[ f"REF: {reference_no} – {data['labels']['CONT NO :']}/{data['labels']['SEAL NO :']}"]
 
-    data = get_line_count(data)
+    data = get_line_count(data, DESCRIPTIONS_DATA)
 
     
     return data

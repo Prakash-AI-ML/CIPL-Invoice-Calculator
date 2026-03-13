@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CIPL DOCX Generator</title>
+    <title>CIPL Document Generator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
@@ -52,29 +52,65 @@
 
                 <h3 class="text-center mb-4">📄 CIPL Document Generator</h3>
 
-                <form id="uploadForm">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Upload Excel Files (.xls / .xlsx)</label>
-                        <input type="file" class="form-control" id="fileInput" accept=".xls,.xlsx" multiple required>
+                <!-- Tabs -->
+                <ul class="nav nav-tabs mb-4" id="ciplTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="excel-tab" data-bs-toggle="tab" data-bs-target="#excel" type="button" role="tab" aria-controls="excel" aria-selected="true">
+                            Excel Input
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="pdf-tab" data-bs-toggle="tab" data-bs-target="#pdf" type="button" role="tab" aria-controls="pdf" aria-selected="false">
+                            PDF Input
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="ciplTabContent">
+
+                    <!-- ─── Excel Tab ─────────────────────────────────────── -->
+                    <div class="tab-pane fade show active" id="excel" role="tabpanel" aria-labelledby="excel-tab">
+                        <form id="excelForm" class="excel-form">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Upload Excel Files (.xls / .xlsx)</label>
+                                <input type="file" class="form-control" id="excelFileInput" accept=".xls,.xlsx" multiple required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Divided By (optional)</label>
+                                <input type="number" step="any" class="form-control" id="excelDividedBy">
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">Generate from Excel</button>
+                            </div>
+                        </form>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Divided By</label>
-                        <input type="number" step="any" class="form-control" id="dividedByInput">
+                    <!-- ─── PDF Tab ───────────────────────────────────────── -->
+                    <div class="tab-pane fade" id="pdf" role="tabpanel" aria-labelledby="pdf-tab">
+                        <form id="pdfForm" class="pdf-form">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Upload PDF Files</label>
+                                <input type="file" class="form-control" id="pdfFileInput" accept=".pdf" multiple required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Divided By (optional)</label>
+                                <input type="number" step="any" class="form-control" id="pdfDividedBy">
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">Generate from PDF</button>
+                            </div>
+                        </form>
                     </div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">Generate Documents</button>
-                    </div>
-                </form>
+                </div>
 
-                <div class="text-center mt-3 loader" id="loader" style="display:none;">
+                <!-- Common result area (shown after any generation) -->
+                <div class="text-center mt-4 loader" id="loader" style="display:none;">
                     <div class="spinner-border text-primary"></div>
                     <p class="mt-2">Generating documents... Please wait</p>
                 </div>
 
                 <div id="resultSection" class="mt-4" style="display:none;">
-
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <h5 class="mb-0">Preview (PDF)</h5>
                         <div class="btn-group btn-group-sm">
@@ -83,9 +119,7 @@
                         </div>
                     </div>
 
-                    <div class="preview-container mb-3" id="previewContainer">
-                        <!-- PDF shown here -->
-                    </div>
+                    <div class="preview-container mb-3" id="previewContainer"></div>
 
                     <div class="mb-4">
                         <h6>Generated Files:</h6>
@@ -98,7 +132,6 @@
                         <button id="downloadCurrentBothBtn" class="btn btn-info">⬇ Current Both (ZIP)</button>
                         <button id="downloadAllBtn" class="btn btn-warning">⬇ Download All (ZIP)</button>
                     </div>
-
                 </div>
 
             </div>
@@ -106,292 +139,199 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    const form = document.getElementById('uploadForm');
-    const loader = document.getElementById('loader');
-    const resultSection = document.getElementById('resultSection');
-    const previewContainer = document.getElementById('previewContainer');
-    const fileListEl = document.getElementById('fileList');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const downloadCurrentPdfBtn = document.getElementById('downloadCurrentPdfBtn');
-    const downloadCurrentDocxBtn = document.getElementById('downloadCurrentDocxBtn');
-    const downloadCurrentBothBtn = document.getElementById('downloadCurrentBothBtn');
-    const downloadAllBtn = document.getElementById('downloadAllBtn');
+// ────────────────────────────────────────────────
+// Shared state
+// ────────────────────────────────────────────────
+let zipBlob = null;
+let filesData = [];
+let currentIndex = 0;
 
-    let zipBlob = null;           // original zip from server
-    let filesData = [];           // array of {name, pdfBlob, docxBlob?, pdfUrl, docxUrl?}
-    let currentIndex = 0;
 
-    function revokeAllUrls() {
-        filesData.forEach(f => {
-            if (f.pdfUrl) URL.revokeObjectURL(f.pdfUrl);
-            if (f.docxUrl) URL.revokeObjectURL(f.docxUrl);
-        });
-        filesData = [];
-        currentIndex = 0;
-    }
+const loader = document.getElementById('loader');
+const resultSection = document.getElementById('resultSection');
+const previewContainer = document.getElementById('previewContainer');
+const fileListEl = document.getElementById('fileList');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const downloadCurrentPdfBtn   = document.getElementById('downloadCurrentPdfBtn');
+const downloadCurrentDocxBtn  = document.getElementById('downloadCurrentDocxBtn');
+const downloadCurrentBothBtn  = document.getElementById('downloadCurrentBothBtn');
+const downloadAllBtn          = document.getElementById('downloadAllBtn');
 
-    function updatePreview() {
-        if (filesData.length === 0) return;
+function revokeAllUrls() {
+    filesData.forEach(f => {
+        if (f.pdfUrl) URL.revokeObjectURL(f.pdfUrl);
+        if (f.docxUrl) URL.revokeObjectURL(f.docxUrl);
+    });
+    filesData = [];
+    currentIndex = 0;
+}
 
-        const file = filesData[currentIndex];
-        previewContainer.innerHTML = file.pdfUrl
-            ? `<embed src="${file.pdfUrl}" type="application/pdf">`
-            : `<div class="alert alert-warning m-3">No PDF available for this file</div>`;
+function updatePreview() {
+    if (filesData.length === 0) return;
+    const file = filesData[currentIndex];
+    previewContainer.innerHTML = file.pdfUrl
+        ? `<embed src="${file.pdfUrl}" type="application/pdf">`
+        : `<div class="alert alert-warning m-3">No PDF preview available</div>`;
 
-        // Update active item in list
-        document.querySelectorAll('.file-item').forEach((el, i) => {
-            el.classList.toggle('active', i === currentIndex);
-        });
+    document.querySelectorAll('.file-item').forEach((el, i) => {
+        el.classList.toggle('active', i === currentIndex);
+    });
 
-        // Update button states
-        prevBtn.disabled = currentIndex === 0;
-        nextBtn.disabled = currentIndex === filesData.length - 1;
-    }
+    prevBtn.disabled = currentIndex === 0;
+    nextBtn.disabled = currentIndex === filesData.length - 1;
+}
 
-    function createFileList() {
-        fileListEl.innerHTML = '';
-        filesData.forEach((file, index) => {
-            const item = document.createElement('a');
-            item.className = 'list-group-item list-group-item-action file-item';
-            item.textContent = file.name || `Document ${index + 1}`;
-            item.onclick = () => {
-                currentIndex = index;
-                updatePreview();
-            };
-            fileListEl.appendChild(item);
-        });
-    }
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const files = document.getElementById('fileInput').files;
-        if (files.length === 0) return alert("Please select at least one Excel file");
-
-        const dividedBy = document.getElementById('dividedByInput').value.trim();
-        const headers = {
-            "Authorization": `Bearer ${localStorage.getItem("token") || getCookie("access_token") || ""}`
+function createFileList() {
+    fileListEl.innerHTML = '';
+    filesData.forEach((file, index) => {
+        const item = document.createElement('a');
+        item.className = 'list-group-item list-group-item-action file-item';
+        item.textContent = file.name || `Document ${index + 1}`;
+        item.onclick = () => {
+            currentIndex = index;
+            updatePreview();
         };
-        if (dividedBy) headers["divided_by"] = dividedBy;
-
-        loader.style.display = 'block';
-        resultSection.style.display = 'none';
-        previewContainer.innerHTML = '';
-        revokeAllUrls();
-
-        const formData = new FormData();
-        Array.from(files).forEach((file, i) => formData.append(`file${i+1}`, file));
-
-        try {
-            const res = await fetch(`${API_BASE}/v1/cipl/docx`, {
-                method: "POST",
-                headers,
-                body: formData
-            });
-
-            if (!res.ok) {
-                const err = await res.text();
-                throw new Error(`Server error ${res.status}: ${err}`);
-            }
-
-            zipBlob = await res.blob();
-            const zip = await JSZip.loadAsync(zipBlob);
-
-            const allFileNames = Object.keys(zip.files);
-            const pdfNames = allFileNames.filter(n => n.toLowerCase().endsWith('.pdf'));
-            const docxNames = allFileNames.filter(n => n.toLowerCase().endsWith('.docx'));
-
-            filesData = [];
-
-            // Pair pdf and docx by base name (most common pattern)
-            for (const pdfName of pdfNames) {
-                const base = pdfName.replace(/\.pdf$/i, '');
-                const matchingDocx = docxNames.find(d => d.startsWith(base) && d.toLowerCase().endsWith('.docx'));
-
-                const entry = {
-                    name: base || pdfName,
-                    pdfBlob: await zip.file(pdfName).async("blob"),
-                    pdfUrl: null
-                };
-
-                entry.pdfBlob = new Blob([entry.pdfBlob], { type: "application/pdf" });
-                entry.pdfUrl = URL.createObjectURL(entry.pdfBlob);
-
-                if (matchingDocx) {
-                    entry.docxBlob = await zip.file(matchingDocx).async("blob");
-                    entry.docxBlob = new Blob([entry.docxBlob], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-                    entry.docxUrl = URL.createObjectURL(entry.docxBlob);
-                    entry.name = base; // cleaner name
-                }
-
-                filesData.push(entry);
-            }
-
-            if (filesData.length === 0) {
-                throw new Error("No PDF files found in the response");
-            }
-
-            currentIndex = 0;
-            createFileList();
-            updatePreview();
-            resultSection.style.display = 'block';
-
-        } catch (err) {
-            console.error(err);
-            previewContainer.innerHTML = `<div class="alert alert-danger m-3">${err.message || "Failed to process documents"}</div>`;
-            resultSection.style.display = 'block';
-        } finally {
-            loader.style.display = 'none';
-        }
+        fileListEl.appendChild(item);
     });
+}
 
-    // Navigation
-    prevBtn.onclick = () => {
-        if (currentIndex > 0) {
-            currentIndex--;
-            updatePreview();
+async function processForm(formId, endpoint, acceptTypes) {
+    const form = document.getElementById(formId);
+    const fileInput = form.querySelector('input[type="file"]');
+    const dividedInput = form.querySelector('input[type="number"]');
+
+    const files = fileInput.files;
+    if (files.length === 0) {
+        alert(`Please select at least one file (${acceptTypes})`);
+        return;
+    }
+
+    const dividedBy = dividedInput.value.trim();
+    const token = localStorage.getItem("token") || getCookie("access_token") || "";
+    const headers = { "Authorization": `Bearer ${token}` };
+    if (dividedBy) headers["divided_by"] = dividedBy;
+
+    loader.style.display = 'block';
+    resultSection.style.display = 'none';
+    previewContainer.innerHTML = '';
+    revokeAllUrls();
+
+    const formData = new FormData();
+    Array.from(files).forEach((file, i) => formData.append(`file${i+1}`, file));
+
+    try {
+        const res = await fetch(`${API_BASE}${endpoint}`, {
+            method: "POST",
+            headers,
+            body: formData
+        });
+
+        if (!res.ok) {
+            let err = await res.text();
+            throw new Error(`Server error ${res.status}: ${err}`);
         }
-    };
 
-    nextBtn.onclick = () => {
-        if (currentIndex < filesData.length - 1) {
-            currentIndex++;
-            updatePreview();
+        zipBlob = await res.blob();
+        const zip = await JSZip.loadAsync(zipBlob);
+
+        const allNames = Object.keys(zip.files);
+        const pdfNames = allNames.filter(n => n.toLowerCase().endsWith('.pdf'));
+        const docxNames = allNames.filter(n => n.toLowerCase().endsWith('.docx'));
+
+        filesData = [];
+
+        for (const pdfName of pdfNames) {
+            const base = pdfName.replace(/\.pdf$/i, '');
+            const matchingDocx = docxNames.find(d => d.startsWith(base) && d.toLowerCase().endsWith('.docx'));
+
+            const entry = {
+                name: base || pdfName,
+                pdfBlob: await zip.file(pdfName).async("blob"),
+                pdfUrl: null
+            };
+            entry.pdfBlob = new Blob([entry.pdfBlob], {type: "application/pdf"});
+            entry.pdfUrl = URL.createObjectURL(entry.pdfBlob);
+
+            if (matchingDocx) {
+                entry.docxBlob = await zip.file(matchingDocx).async("blob");
+                entry.docxBlob = new Blob([entry.docxBlob], {type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+                entry.docxUrl = URL.createObjectURL(entry.docxBlob);
+                entry.name = base;
+            }
+
+            filesData.push(entry);
         }
-    };
 
-    // Current file downloads
-    downloadCurrentPdfBtn.onclick = () => {
-        const f = filesData[currentIndex];
-        if (!f?.pdfUrl) return alert("No PDF available");
-        const a = document.createElement('a');
-        a.href = f.pdfUrl;
-        a.download = `${f.name}.pdf`;
-        a.click();
-    };
+        if (filesData.length === 0) {
+            throw new Error("No PDF files found in the response");
+        }
 
-    downloadCurrentDocxBtn.onclick = () => {
-        const f = filesData[currentIndex];
-        if (!f?.docxUrl) return alert("No DOCX available for this file");
-        const a = document.createElement('a');
-        a.href = f.docxUrl;
-        a.download = `${f.name}.docx`;
-        a.click();
-    };
+        currentIndex = 0;
+        createFileList();
+        updatePreview();
+        resultSection.style.display = 'block';
 
-    // // downloadCurrentBothBtn.onclick = async () => {
-    // //     const f = filesData[currentIndex];
-    // //     if (!f?.pdfBlob) return alert("No files available");
+    } catch (err) {
+        console.error(err);
+        previewContainer.innerHTML = `<div class="alert alert-danger m-3">${err.message || "Processing failed"}</div>`;
+        resultSection.style.display = 'block';
+    } finally {
+        loader.style.display = 'none';
+    }
+}
 
-    // //     const miniZip = new JSZip();
-    // //     miniZip.file(`${f.name}.pdf`, f.pdfBlob);
+// ─── Excel form submit ────────────────────────────────
+document.getElementById('excelForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    await processForm('excelForm', '/v1/cipl/docx', '.xls, .xlsx');
+});
 
-    // //     if (f.docxBlob) {
-    // //         miniZip.file(`${f.name}.docx`, f.docxBlob);
-    // //     }
+// ─── PDF form submit ──────────────────────────────────
+document.getElementById('pdfForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    await processForm('pdfForm', '/v1/cipl/pdf-docx', '.pdf');
+});
 
-    // //     const content = await miniZip.generateAsync({type: "blob"});
-    // //     const url = URL.createObjectURL(content);
-    // //     const a = document.createElement('a');
-    // //     a.href = url;
-    // //     a.download = `${f.name}_both.zip`;
-    // //     a.click();
-    // //     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    // // };
+// Navigation & download handlers (same as before)
+prevBtn.onclick = () => { if (currentIndex > 0) { currentIndex--; updatePreview(); }};
+nextBtn.onclick  = () => { if (currentIndex < filesData.length - 1) { currentIndex++; updatePreview(); }};
 
-    // // Download ALL files as one zip
-    // downloadAllBtn.onclick = async () => {
-    //     if (filesData.length === 0) return alert("No documents available");
+downloadCurrentPdfBtn.onclick = () => {
+    const f = filesData[currentIndex];
+    if (!f?.pdfUrl) return alert("No PDF available");
+    const a = document.createElement('a');
+    a.href = f.pdfUrl;
+    a.download = `${f.name}.pdf`;
+    a.click();
+};
 
-    //     const allZip = new JSZip();
+downloadCurrentDocxBtn.onclick = () => {
+    const f = filesData[currentIndex];
+    if (!f?.docxUrl) return alert("No DOCX available");
+    const a = document.createElement('a');
+    a.href = f.docxUrl;
+    a.download = `${f.name}.docx`;
+    a.click();
+};
 
-    //     filesData.forEach(f => {
-    //         allZip.file(`${f.name}.pdf`, f.pdfBlob);
-    //         if (f.docxBlob) {
-    //             allZip.file(`${f.name}.docx`, f.docxBlob);
-    //         }
-    //     });
-
-    //     const content = await allZip.generateAsync({type: "blob"});
-    //     const url = URL.createObjectURL(content);
-    //     const a = document.createElement('a');
-    //     a.href = url;
-    //     a.download = "all_cipl_documents.zip";
-    //     a.click();
-    //     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    // };
-
-
-// Download ALL files as one zip (PDF + DOCX for every document)
-// downloadAllBtn1.onclick = async () => {
-//     if (filesData.length === 0) return alert("No documents available");
-
-//     const allZip = new JSZip();
-
-//     let hasAnyDocx = false;
-
-//     filesData.forEach(f => {
-//         // Always add PDF
-//         allZip.file(`${f.name}.pdf`, f.pdfBlob);
-
-//         // Add DOCX only if it exists for this file
-//         if (f.docxBlob) {
-//             allZip.file(`${f.name}.docx`, f.docxBlob);
-//             hasAnyDocx = true;
-//         }
-//     });
-
-//     if (filesData.length === 1 && !hasAnyDocx) {
-//         alert("No DOCX files were generated — only PDFs will be included.");
-//     }
-
-//     try {
-//         const content = await allZip.generateAsync({type: "blob"});
-//         const url = URL.createObjectURL(content);
-//         const a = document.createElement('a');
-//         a.href = url;
-//         a.download = "all_cipl_documents.zip";
-//         a.click();
-
-//         // Clean up temporary URL after short delay
-//         setTimeout(() => URL.revokeObjectURL(url), 1000);
-//     } catch (err) {
-//         console.error("Failed to create all-files ZIP:", err);
-//         alert("Failed to create the ZIP file. Please try again.");
-//     }
-// };
-
-
-downloadAllBtn.addEventListener('click', () => {
-        if (!zipBlob) return alert("No files available");
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(zipBlob);
-        a.download = "cipl_documents.zip";
-        a.click();
-    });
-
-// Download current file's PDF + DOCX as mini-zip
 downloadCurrentBothBtn.onclick = async () => {
     const f = filesData[currentIndex];
-    if (!f || !f.pdfBlob) return alert("No PDF available for this file");
+    if (!f?.pdfBlob) return alert("No PDF available");
 
     const miniZip = new JSZip();
-
-    // Always add PDF
     miniZip.file(`${f.name}.pdf`, f.pdfBlob);
-
     let hasDocx = false;
 
-    // Add DOCX if it exists
     if (f.docxBlob) {
         miniZip.file(`${f.name}.docx`, f.docxBlob);
         hasDocx = true;
     }
 
     if (!hasDocx) {
-        alert("No DOCX was generated for this file — only PDF will be included in the ZIP.");
+        alert("No DOCX available — only PDF will be included.");
     }
 
     try {
@@ -401,20 +341,26 @@ downloadCurrentBothBtn.onclick = async () => {
         a.href = url;
         a.download = `${f.name}_both.zip`;
         a.click();
-
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (err) {
-        console.error("Failed to create current both ZIP:", err);
-        alert("Failed to create ZIP for current file.");
+        alert("Failed to create ZIP");
     }
 };
 
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
+downloadAllBtn.addEventListener('click', () => {
+    if (!zipBlob) return alert("No files available");
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(zipBlob);
+    a.download = "cipl_documents.zip";
+    a.click();
+});
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';')?.shift() ?? null;
+    return null;
+}
 </script>
 </body>
 </html>
