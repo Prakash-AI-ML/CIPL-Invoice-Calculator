@@ -322,7 +322,7 @@ def add_packing_details(doc, col_widths, packing_details, indent):
             bottom=None
         )
     col_idx = 1
-    total_table_lines = 48
+    total_table_lines = 47
     add_next_line = packing_details['present_lines']
     if add_next_line >0:
         packing_header = f"{"\n" *( total_table_lines - add_next_line)}PACKING DETAILS:\n"

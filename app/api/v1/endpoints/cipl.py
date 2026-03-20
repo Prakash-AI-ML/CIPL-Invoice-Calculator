@@ -14,7 +14,7 @@ from typing import List, Optional
 import json
 import logging
 from datetime import datetime
-from app.cipl.extract import analysis_cipl
+from app.cipl.extract import analysis_cipl, get_data_to_cipl
 from app.cipl.documents import create_documents
 from app.db.session import get_db
 from app.api.dependencies import get_user_permissions_detailed
@@ -270,4 +270,100 @@ async def generate_docx_and_pdf(
     except Exception as e:
         logging.error(f"Error processing files: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+
+
+
+@router.post("/pdf-preview")
+async def generate_docx_and_pdf(
+    request: Request,
+    data: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_user_permissions_detailed),
+):
+   
+    mapping_data = await get_cipl_descs(db)
+
+    DESCRIPTIONS_DATA = {
+        "item_id": [],
+        "original": [],
+        "modified": [],
+        "lines": []
+    }
+
+    for row in mapping_data:
+        DESCRIPTIONS_DATA["item_id"].append(row.item_id)
+        DESCRIPTIONS_DATA["original"].append(row.original)
+        DESCRIPTIONS_DATA["modified"].append(row.modified)
+        DESCRIPTIONS_DATA["lines"].append(row.lines)
+
+    
+    zip_buffer = io.BytesIO()
+
+    try:
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zipf:
+            result_data = {}
+            
+
+
+            for key, value in data.items():
+
+                # Prepare clean filenames
+                base_name = f'CIPL_{key}'
+                docx_filename = f"{base_name}.docx"
+                pdf_filename  = f"{base_name}.pdf"
+                value = get_data_to_cipl(value, DESCRIPTIONS_DATA)
+                result_data[key] = value
+                # ─── Create DOCX in memory ───────────────────────────────────────
+                document = create_documents(data=value, filename=docx_filename)
+
+                docx_buffer = io.BytesIO()
+                document.save(docx_buffer)
+                docx_buffer.seek(0)
+
+                # ─── Convert DOCX → PDF using docx2pdf + temp files ──────────────
+                with tempfile.TemporaryDirectory(prefix="cipl_") as tmp_dir:
+                    docx_temp_path = os.path.join(tmp_dir, "temp_input.docx")
+                    pdf_temp_path  = os.path.join(tmp_dir, "temp_output.pdf")
+
+                    # Write DOCX bytes to disk (docx2pdf requires file paths)
+                    with open(docx_temp_path, "wb") as f:
+                        f.write(docx_buffer.getvalue())
+
+                    # Perform conversion (input_path → output_path)
+                    convert(docx_temp_path, pdf_temp_path)
+
+                    # Read generated PDF back to memory
+                    with open(pdf_temp_path, "rb") as f:
+                        pdf_bytes = f.read()
+
+                pdf_buffer = io.BytesIO(pdf_bytes)
+                pdf_buffer.seek(0)
+                docx_buffer.seek(0)  # reset if needed later
+
+                
+              
+                # ─── Add DOCX and PDF files to the ZIP ──────────────────────────
+                zipf.writestr(f"WORD/{docx_filename}", docx_buffer.getvalue())
+                zipf.writestr(f"PDF/{pdf_filename}", pdf_buffer.getvalue())
+            # Convert the result to JSON format
+            result_json = json.dumps(result_data, ensure_ascii=False, indent=4)
+            
+            # Add the JSON content to the ZIP file
+            zipf.writestr('results.json', result_json)
+
+        zip_buffer.seek(0)
+
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": f'attachment; filename="converted_files.zip"'
+            }
+        )
+
+    except Exception as e:
+        logging.error(f"Error processing files: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+
+
 

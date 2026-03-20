@@ -307,6 +307,7 @@ def get_line_count(data, DESCRIPTIONS_DATA):
         
 
         else:
+            print('not working')
             count +=2
     if data['packing_details']:
         if data['packing_details']['details']:
@@ -396,3 +397,104 @@ def analysis_cipl(df, df1, DESCRIPTIONS_DATA, divided_by = None):
     
     return data
 
+def get_line_count(data, DESCRIPTIONS_DATA):
+
+    desc_map = dict(zip(DESCRIPTIONS_DATA['modified'], DESCRIPTIONS_DATA['lines']))
+    id_map = dict(zip(DESCRIPTIONS_DATA['item_id'], DESCRIPTIONS_DATA['lines']))
+    count = 0
+    for item in data['items']:
+        if item['description'].startswith('ROW'):
+            count +=2
+        elif item['description'].startswith('MDA'):
+            count +=2
+       
+        elif item['description'] in desc_map:
+            count += desc_map[item['description']] + 1
+        elif item['gpn'] in id_map:
+            count += id_map[item['gpn']] + 1
+        else:
+            count +=3
+    if data['packing_details']:
+        if data['packing_details']['details']:
+            count += len(data['packing_details']['details']) + 2 # 1 for header and another for \n
+     
+        if data['packing_details']['total']:
+            count += len(data['packing_details']['total']) + 1 # 1 for \n line
+
+        if data['packing_details']['shipping']:
+            count += len(data['packing_details']['shipping']) + 2 # 1 for header and another for \n   
+
+    data['packing_details']['present_lines'] = count
+    return data
+
+def get_data_to_cipl(data, DESCRIPTIONS_DATA):
+    
+    original_items = data['items']
+    modified_items = copy.deepcopy(original_items)
+
+    for item in modified_items:
+        # if item['description'] in DESCRIPTION_MAPPING:
+        #     item['description'] = DESCRIPTION_MAPPING[item['description']]
+        #     item['description_modified'] = 1
+
+        if item['description'] in DESCRIPTIONS_DATA['original']:
+            idx = DESCRIPTIONS_DATA['original'].index(item['description'])
+            item['description'] = DESCRIPTIONS_DATA['modified'][idx]
+            item['description_modified'] = 1
+        elif item['gpn'] in DESCRIPTIONS_DATA['item_id']:
+            idx = DESCRIPTIONS_DATA['item_id'].index(item['gpn'])
+            item['description'] = DESCRIPTIONS_DATA['modified'][idx]
+            item['description_modified'] = 1
+        elif 'ROW' in item['description']:
+            item['description_modified'] = 1
+        elif item['description'] in DESCRIPTIONS_DATA['modified']:
+            item['description_modified'] = 1
+
+        else:
+            item['description_modified'] = 0
+        
+    
+    data = dict(
+                shipper = data['shipper'],
+                importer_of_record = data['importer_of_record'],
+                ship_to = data['ship_to'],
+                invoice_type = None,
+                reference_no = data['reference_no'],
+                reference_date = data['reference_date'],
+                po_no = data['po_no'],
+                po_no_date = data['po_no_date'],
+                port_of_loading = data['port_of_loading'],
+                port_of_discharge = data['port_of_discharge'],
+
+                labels = {
+                "REF NO :": data['reference_no'],
+                "DATE :": data['reference_date'],
+                "PORT OF LOADING :": data['port_of_loading'],
+                "PORT OF DISCHARGE :": data['port_of_discharge'],
+                "TERMS :": "DDP",
+                "CONT NO :": data['labels']["CONT NO :"],
+                "SEAL NO :": data['labels']["SEAL NO :"]
+            },
+                packing_details = {"details":data['packing_details']['details'],
+                                   "total" :{'TOTAL PACKAGES:': data['packing_details']["total"]['TOTAL PACKAGES:'],
+                                            "GROSS WEIGHT:" : data['packing_details']["total"]["GROSS WEIGHT:"],
+                                            'TOTAL CBM (m³) :': f'{data['packing_details']["total"]['TOTAL CBM (m³) :']}'
+                                            },
+                                    'shipping': data['packing_details']['shipping']
+                                            },
+                original_packing_details = data['original_packing_details'],
+                totals = {'TOTAL PACKAGES:': data['totals']['TOTAL PACKAGES:'],
+                        "GROSS WEIGHT:" : data['totals']["GROSS WEIGHT:"],
+                        'TOTAL VOLUME :': data['totals']['TOTAL VOLUME :'],
+                        "is_verify": data['totals']['is_verify']
+                        },
+                original_items = data['original_items'],
+                items = modified_items,
+                total = data['total']
+                
+    )
+
+    data = get_line_count(data, DESCRIPTIONS_DATA)
+    return data
+
+    

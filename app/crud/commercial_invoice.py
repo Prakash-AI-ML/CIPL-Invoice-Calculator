@@ -50,7 +50,7 @@ async def get_commercial_invoices(
     status: Optional[StatusEnum] = None,
 ) -> List[Dict[str, Any]]:
 
-    stmt = select(CommercialInvoice).offset(skip).limit(limit).order_by(CommercialInvoice.id.desc())
+    stmt = select(CommercialInvoice).offset(skip).limit(limit).order_by(CommercialInvoice.updated_at.desc())
 
     if reference_number:
         stmt = stmt.where(CommercialInvoice.reference_number.ilike(f"%{reference_number}%"))
