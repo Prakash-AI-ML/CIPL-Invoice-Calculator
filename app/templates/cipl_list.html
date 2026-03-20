@@ -1,0 +1,916 @@
+<h4>CIPL Lists</h4>
+
+<style>
+  .dataTables_wrapper .dropdown-menu {
+    position: absolute !important;
+    z-index: 1051 !important;
+    min-width: 140px;
+  }
+
+  #ciplListTable .dropdown {
+    position: relative !important;
+  }
+
+  #ciplListTable .dropdown-menu {
+    top: 100% !important;
+    right: 0 !important;
+    left: auto !important;
+  }
+
+  .dropdown-toggle.no-caret::after {
+    display: none !important;
+  }
+</style>
+
+<!-- JSZip for ZIP handling in preview -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<!-- Bootstrap 5 bundle (includes Popper) – ONLY ONE INCLUDE -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+<div class="d-flex justify-content-between mb-3">
+  <div></div>
+  {% set settings_buttons = request.state.user.menus['settings']['buttons'] %}
+  {% if 'clients_crud' in settings_buttons | map(attribute='button_name') | list %}
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ciplModal" id="addCiplBtn">
+    Add Description
+  </button>
+  {% endif %}
+</div>
+
+<div class="table-responsive">
+  <table class="table table-bordered table-hover" id="ciplListTable">
+    <thead class="table-light">
+      <tr>
+        <th>S. No.</th>
+        <th>REF NO</th>
+        <th>DATE</th>
+        <th>CONTAINER DETAILS</th>
+        <th>TOTAL PACKAGES</th>
+        <th>GROSS WEIGHT</th>
+        <th>TOTAL CBM (m³)</th>
+        <th>TOTAL AMOUNT</th>
+        <th>TYPE</th>
+        <th>STATUS</th>
+        {% if 'clients_crud' in settings_buttons | map(attribute='button_name') | list %}
+        <th style="width:60px; text-align:center;">Actions</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- PREVIEW MODAL -->
+<div class="modal fade" id="ciplPreviewModal" tabindex="-1" aria-labelledby="ciplPreviewModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable modal-fullscreen-lg-down">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ciplPreviewModalLabel">Preview Commercial Invoice / Packing List</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <ul class="nav nav-tabs" id="previewTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="pdf-tab" data-bs-toggle="tab" data-bs-target="#pdf-pane" type="button" role="tab">PDF Preview</button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="docx-tab" data-bs-toggle="tab" data-bs-target="#docx-pane" type="button" role="tab">Word (Download only)</button>
+          </li>
+        </ul>
+
+        <div class="tab-content p-3" id="previewTabContent">
+          <div class="tab-pane fade show active" id="pdf-pane" role="tabpanel">
+            <div id="pdfLoading" class="text-center py-5">
+              <div class="spinner-border text-primary"></div>
+              <p class="mt-3">Generating & loading PDF preview...</p>
+            </div>
+            <iframe id="pdfIframe" style="width:100%; height:70vh; border:none; display:none;"></iframe>
+            <div id="pdfError" class="alert alert-danger d-none"></div>
+          </div>
+
+          <div class="tab-pane fade" id="docx-pane" role="tabpanel">
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle-fill me-2"></i>
+              DOCX preview is not supported directly in the browser.<br>
+              Please use the <strong>Download Word</strong> button to open/save the file.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-primary" id="downloadPdfBtn" disabled>
+          <i class="bi bi-file-earmark-arrow-down me-1"></i> Download PDF
+        </button>
+        <button type="button" class="btn btn-outline-primary" id="downloadDocxBtn" disabled>
+          <i class="bi bi-file-earmark-word me-1"></i> Download Word
+        </button>
+        <button type="button" class="btn btn-outline-success hide" id="downloadZipBtn" disabled>
+          <i class="bi bi-file-earmark-zip me-1"></i> Download ZIP
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal fade" id="ciplEditModal" tabindex="-1" aria-labelledby="ciplModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ciplModalTitle">Edit Commercial Invoice / Packing List</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="ciplEditForm">
+          <input type="hidden" id="editCiplId" name="id">
+
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <h6>Exporter / Seller</h6>
+              <textarea class="form-control mb-2" rows="4" id="editExporter" name="raw_json.exporter" placeholder="Exentec Singapore Pte Ltd\n8 Tuas South Lane\n..."></textarea>
+            </div>
+            <div class="col-md-6">
+              <h6>Consignee / Buyer</h6>
+              <textarea class="form-control mb-2" rows="4" id="editConsignee" name="raw_json.consignee" placeholder="Everest Co. Ltd (Head Office)\n..."></textarea>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label class="form-label">REF NO</label>
+              <input type="text" class="form-control" id="editRefNo" name="raw_json.reference_no">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">DATE</label>
+              <input type="date" class="form-control" id="editDate" name="raw_json.reference_date">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">PORT OF LOADING</label>
+              <input type="text" class="form-control" id="editPortLoading" name="raw_json.port_loading">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">PORT OF DISCHARGE</label>
+              <input type="text" class="form-control" id="editPortDischarge" name="raw_json.port_discharge">
+            </div>
+          </div>
+
+          <div class="row mb-4">
+            <div class="col-md-4">
+              <label class="form-label">TERMS</label>
+              <input type="text" class="form-control" id="editTerms" name="raw_json.terms" value="DDP">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">CONT NO</label>
+              <input type="text" class="form-control" id="editContNo" name="raw_json.container_no">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">SEAL NO</label>
+              <input type="text" class="form-control" id="editSealNo" name="raw_json.seal_no">
+            </div>
+          </div>
+
+          <h6>ITEM DESCRIPTION</h6>
+          <div class="table-responsive mb-4">
+            <table class="table table-bordered" id="editItemsTable">
+              <thead class="table-light">
+                <tr>
+                  <th>S.No</th>
+                  <th>DESCRIPTION</th>
+                  <th>SERIAL NO</th>
+                  <th>UOM</th>
+                  <th>COO</th>
+                  <th>QTY</th>
+                  <th>UNIT COST ($)</th>
+                  <th>TOTAL ($)</th>
+                  <th><button type="button" class="btn btn-sm btn-success" id="addItemRow">+ Add Row</button></th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <h6>PACKING DETAILS</h6>
+          <div class="row mb-3">
+            <div class="col-md-12">
+              <textarea class="form-control" rows="5" id="editPackingDetails" name="raw_json.packing_details.shipping" placeholder="20 loose / 790x350x35cm / 392kgs each = 7,840 Kgs ..."></textarea>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label class="form-label">TOTAL PACKAGES</label>
+              <input type="text" class="form-control" id="editTotalPackages" name="raw_json.packing_details.total['TOTAL PACKAGES:']">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">GROSS WEIGHT (kgs)</label>
+              <input type="text" class="form-control" id="editGrossWeight" name="raw_json.packing_details.total['GROSS WEIGHT:']">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">TOTAL CBM (m³)</label>
+              <input type="text" class="form-control" id="editTotalCbm" name="raw_json.packing_details.total['TOTAL CBM (m³) :']">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">TOTAL INVOICE VALUE ($)</label>
+              <input type="text" class="form-control" id="editTotalAmount" name="raw_json.total">
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">SHIPPING MARK</label>
+            <input type="text" class="form-control" id="editShippingMark" name="raw_json.shipping_mark" placeholder="ES-00130 / TBA / TBA">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Type (ORI / FIN)</label>
+            <select class="form-select" id="editIsOriginal" name="is_original">
+              <option value="true">ORI (Original)</option>
+              <option value="false">FIN (Final)</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="saveCiplBtn">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="ciplLoading" class="text-center py-5 d-none">
+  <div class="spinner-border text-primary"></div>
+  <p class="mt-2">Loading descriptions...</p>
+</div>
+
+<div id="ciplError" class="alert alert-danger d-none"></div>
+
+<script> // cipl list scripts
+  const API_BASE_URL = API_BASE + "/v1/cipl-desc";
+
+  const headers = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${localStorage.getItem("token") || getCookie("access_token")}`,
+    "accept": "application/json"
+  };
+
+  const ciplListTableBody = document.querySelector("#ciplListTable tbody");
+  const ciplLoading = document.getElementById("ciplLoading");
+  const ciplError = document.getElementById("ciplError");
+
+
+  async function loadCipl() {
+    if ($.fn.DataTable.isDataTable('#ciplListTable')) {
+      $('#ciplListTable').DataTable().destroy();
+    }
+
+    ciplLoading.classList.remove("d-none");
+    ciplListTableBody.innerHTML = "";
+
+    try {
+      const res = await fetch(`${API_BASE}/v1/commercial-invoices/read`, { headers });
+      if (!res.ok) throw new Error("Failed to load invoices");
+      const data = await res.json();
+
+      data.forEach((c, index) => {
+        const refNo = c.raw_json?.reference_no ?? "-";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${refNo}</td>
+          <td>${c.raw_json?.reference_date ?? "-"}</td>
+          <td>${c.raw_json?.packing_details?.shipping ?? "-"}</td>
+          <td>${c.raw_json?.packing_details?.total?.["TOTAL PACKAGES:"] ?? "-"}</td>
+          <td>${c.raw_json?.packing_details?.total?.["GROSS WEIGHT:"] ?? "-"}</td>
+          <td>${c.raw_json?.packing_details?.total?.["TOTAL CBM (m³) :"] ?? "-"}</td>
+          <td>${c.raw_json?.total ?? "-"}</td>
+          <td>${c.is_original === true ? 'ORI' : 'FIN'}</td>
+          <td>${c.status ?? "-"}</td>
+          <td style="text-align:center;">
+            <div class="dropdown d-inline-block">
+              <button 
+                class="btn btn-sm btn-link text-dark p-0 dropdown-toggle no-caret" 
+                type="button" 
+                data-bs-toggle="dropdown" 
+                data-bs-auto-close="true"
+                data-bs-boundary="window"
+                aria-expanded="false"
+                title="Actions"
+              >
+                <i class="bi bi-three-dots-vertical fs-5"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                <li><a class="dropdown-item" href="#" onclick='previewCipl("${refNo}", ${c.is_original}, ${JSON.stringify(c.raw_json)})'><i class="bi bi-eye me-2"></i>Preview</a></li>
+                <li><a class="dropdown-item" href="#" onclick="editCipl(${c.id})"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                <li><a class="dropdown-item text-danger" href="#" onclick="openDelete(${c.id})"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                <li><hr class="dropdown-divider"></li>
+                
+              </ul>
+            </div>
+          </td>
+        `;
+        ciplListTableBody.appendChild(tr);
+      });
+
+      // Initialize DataTable
+      const table = $('#ciplListTable').DataTable({
+        order: [[0, 'asc']]
+      });
+
+      // Re-attach Bootstrap dropdowns after every draw (critical fix)
+      table.on('draw.dt', function () {
+        document.querySelectorAll('#ciplListTable .dropdown-toggle').forEach(el => {
+          if (el._bsDropdown) {
+            el._bsDropdown.dispose();
+          }
+          el._bsDropdown = new bootstrap.Dropdown(el, {
+            boundary: 'window'
+          });
+        });
+      });
+
+      // Force initial draw to apply handler immediately
+      table.draw();
+
+    } catch (err) {
+      ciplError.textContent = "Failed to load descriptions: " + err.message;
+      ciplError.classList.remove("d-none");
+    } finally {
+      ciplLoading.classList.add("d-none");
+    }
+  }
+
+
+
+  /* INIT */
+  loadCipl();
+</script>
+
+
+<script>
+  
+    /* =========================
+       ADD / EDIT MODAL
+    ========================= */
+    document.getElementById("addCiplBtn")?.addEventListener("click", () => {
+      document.getElementById("ciplForm").reset();
+      document.getElementById("ciplPkId").value = "";
+      document.getElementById("ciplModalTitle").textContent = "Add Description";
+    });
+
+    async function editCipl(id) {
+      try {
+        const endpoint = `${API_BASE_URL.replace('/v1/cipl-desc', '/v1/commercial-invoices')}/read/${id}`;
+        const res = await fetch(endpoint, { headers });
+        if (!res.ok) throw new Error(`Failed to load invoice: ${res.status}`);
+
+        const invoice = await res.json();
+
+        // IMPORTANT: Store full original raw_json
+        currentRawJson = JSON.parse(JSON.stringify(invoice.raw_json));
+        currentRefNo = invoice.reference_number
+
+        // Set modal title & hidden ID
+        document.getElementById("editCiplId").value = invoice.id;
+        document.getElementById("ciplModalTitle").textContent = `Edit ${invoice.reference_number || invoice.raw_json.reference_no || 'Invoice'}`;
+
+        // ─── Header / Labels ────────────────────────────────────────────────────────
+        setValue("editRefNo",         invoice.raw_json.reference_no || invoice.raw_json.labels?.["REF NO :"] || "");
+        setValue(
+          "editDate",
+          formatDate(invoice.raw_json.reference_date) ||
+          formatDate(invoice.raw_json.labels?.["DATE :"]) ||
+          ""
+        );
+        setValue("editPortLoading",   invoice.raw_json.port_of_loading || invoice.raw_json.labels?.["PORT OF LOADING :"] || "");
+        setValue("editPortDischarge", invoice.raw_json.port_of_discharge || invoice.raw_json.labels?.["PORT OF DISCHARGE :"] || "");
+        setValue("editTerms",         invoice.raw_json.labels?.["TERMS :"] || "DDP");
+        setValue("editContNo",        invoice.raw_json.labels?.["CONT NO :"] || "TBA");
+        setValue("editSealNo",        invoice.raw_json.labels?.["SEAL NO :"] || "TBA");
+
+        // ─── Addresses ──────────────────────────────────────────────────────────────
+        setValue("editExporter",      invoice.raw_json.shipper?.join("\n") || "");
+        setValue("editConsignee",     invoice.raw_json.importer_of_record?.join("\n") || "");
+
+        // ─── Packing Details ────────────────────────────────────────────────────────
+        setValue("editPackingDetails", invoice.raw_json.packing_details?.details?.join("\n") || invoice.raw_json.packing_details?.shipping?.join("\n") || "");
+
+        const totals = invoice.raw_json.packing_details?.total || invoice.raw_json.totals || {};
+        setValue("editTotalPackages",  totals["TOTAL PACKAGES:"] || "");
+        setValue("editGrossWeight",    totals["GROSS WEIGHT:"]   || "");
+        setValue("editTotalCbm",       totals["TOTAL CBM (m³) :"] || totals["TOTAL VOLUME :"] || "");
+
+        // ─── Totals & Type ──────────────────────────────────────────────────────────
+        setValue("editTotalAmount",   invoice.raw_json.total || "");
+        setValue("editShippingMark",  invoice.raw_json.packing_details?.shipping?.[0] || "REF: ES-00130 – TBA/TBA");
+
+        document.getElementById("editIsOriginal").value = invoice.is_original ? "true" : "false";
+
+        // ─── Items Table ────────────────────────────────────────────────────────────
+        const tbody = document.querySelector("#editItemsTable tbody");
+        tbody.innerHTML = "";
+
+        const itemsArray = invoice.raw_json.items?.length > 0 
+          ? invoice.raw_json.items 
+          : invoice.raw_json.original_items || [];
+
+        itemsArray.forEach((item, index) => {
+          if (!item.item && !item.description) return;
+
+          addItemRow({
+            item_no:   item.item || (index + 1),
+            description: item.description || "",
+            serial_no:   item.gpn || "",
+            uom:         item.uom || "",
+            coo:         item.country_of_origin || "",
+            qty:         item.quantity || "",
+            unit_cost:   cleanPrice(item.fob_price_sgd),
+            total:       cleanPrice(item.fob_amount_sgd)
+          });
+        });
+
+        if (tbody.rows.length === 0) {
+          addItemRow();
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById("ciplEditModal"));
+        modal.show();
+
+      } catch (err) {
+        console.error(err);
+        alert("Error loading invoice:\n" + err.message);
+      }
+    }
+
+    // Helper functions (unchanged from your code)
+    function setValue(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.value = value ?? "";
+    }
+
+    function cleanPrice(str) {
+      if (!str) return "";
+      return str.replace(/[$,\s]/g, "").trim();
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "";
+      const months = { Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06", Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12" };
+      const [day, mon, year] = dateStr.split("-");
+      const fullYear = "20" + year;
+      return `${fullYear}-${months[mon]}-${day}`;
+    }
+
+    function addItemRow(item = {}) {
+      const tbody = document.querySelector("#editItemsTable tbody");
+      const rowIndex = tbody.rows.length;
+      const displayNo = rowIndex + 1;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${displayNo}</td>
+        <td><textarea class="form-control" rows="3" name="items[${rowIndex}].description">${escapeHtml(item.description || "")}</textarea></td>
+        <td><input type="text" class="form-control" name="items[${rowIndex}].gpn" value="${escapeHtml(item.serial_no || "")}"></td>
+        <td><input type="text" class="form-control" name="items[${rowIndex}].uom" value="${escapeHtml(item.uom || "")}"></td>
+        <td><input type="text" class="form-control" name="items[${rowIndex}].country_of_origin" value="${escapeHtml(item.coo || "")}"></td>
+        <td><input type="number" step="any" class="form-control" name="items[${rowIndex}].quantity" value="${item.qty || ""}"></td>
+        <td><input type="number" step="0.01" class="form-control" name="items[${rowIndex}].fob_price_sgd" value="${item.unit_cost || ""}"></td>
+        <td><input type="number" step="0.01" class="form-control" name="items[${rowIndex}].fob_amount_sgd" value="${item.total || ""}"></td>
+        <td><button type="button" class="btn btn-sm btn-danger remove-row">×</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      tr.querySelector(".remove-row").onclick = () => {
+        tr.remove();
+        renumberTable();
+      };
+
+      const qtyEl   = tr.querySelector(`input[name="items[${rowIndex}].quantity"]`);
+      const priceEl = tr.querySelector(`input[name="items[${rowIndex}].fob_price_sgd"]`);
+      const totalEl = tr.querySelector(`input[name="items[${rowIndex}].fob_amount_sgd"]`);
+
+      const recalc = () => {
+        const q = parseFloat(qtyEl.value) || 0;
+        const p = parseFloat(priceEl.value) || 0;
+        totalEl.value = (q * p).toFixed(2);
+      };
+
+      qtyEl.addEventListener("input", recalc);
+      priceEl.addEventListener("input", recalc);
+    }
+
+    function renumberTable() {
+      document.querySelectorAll("#editItemsTable tbody tr").forEach((row, i) => {
+        row.cells[0].textContent = i + 1;
+      });
+    }
+
+    function escapeHtml(text) {
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return text.replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function toInvoiceDate(dateStr) {
+      if (!dateStr) return "";
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      const d = new Date(dateStr);
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = months[d.getMonth()];
+      const year = String(d.getFullYear()).slice(-2);
+      return `${day}-${month}-${year}`;
+    }
+
+    /* =========================
+       SAVE CHANGES - SAFE VERSION (preserves all fields)
+    ========================= */
+    document.getElementById("saveCiplBtn")?.addEventListener("click", async () => {
+      if (!currentRawJson) {
+        alert("No original data loaded. Please reopen the edit modal.");
+        return;
+      }
+
+      const refNo = document.getElementById("editRefNo").value.trim();
+      if (!refNo) {
+        alert("Reference number is missing — cannot save.");
+        return;
+      }
+
+      // Deep copy of original raw_json
+      const updatedRaw = JSON.parse(JSON.stringify(currentRawJson));
+
+      // Apply updates from form
+      updatedRaw.reference_no = refNo;
+      updatedRaw.reference_date = toInvoiceDate(document.getElementById("editDate").value) || updatedRaw.reference_date;
+
+      updatedRaw.labels = {
+        ...updatedRaw.labels,
+        "REF NO :": refNo,
+        "DATE :": updatedRaw.reference_date,
+        "PORT OF LOADING :": document.getElementById("editPortLoading").value.trim(),
+        "PORT OF DISCHARGE :": document.getElementById("editPortDischarge").value.trim(),
+        "TERMS :": document.getElementById("editTerms").value.trim() || "DDP",
+        "CONT NO :": document.getElementById("editContNo").value.trim() || "TBA",
+        "SEAL NO :": document.getElementById("editSealNo").value.trim() || "TBA"
+      };
+
+      updatedRaw.shipper = document.getElementById("editExporter").value.split("\n").filter(line => line.trim());
+      updatedRaw.importer_of_record = document.getElementById("editConsignee").value.split("\n").filter(line => line.trim());
+
+      updatedRaw.total = document.getElementById("editTotalAmount").value.trim() || updatedRaw.total;
+
+      updatedRaw.packing_details = updatedRaw.packing_details || {};
+      updatedRaw.packing_details.details = document.getElementById("editPackingDetails").value.split("\n").filter(line => line.trim());
+      updatedRaw.packing_details.shipping = document.getElementById("editShippingMark").value.split("\n").filter(line => line.trim());
+      updatedRaw.packing_details.total = {
+        ...updatedRaw.packing_details.total,
+        "TOTAL PACKAGES:": document.getElementById("editTotalPackages").value.trim(),
+        "GROSS WEIGHT:": document.getElementById("editGrossWeight").value.trim(),
+        "TOTAL CBM (m³) :": document.getElementById("editTotalCbm").value.trim()
+      };
+
+      // Rebuild items
+      const newItems = [];
+      const rows = document.querySelectorAll("#editItemsTable tbody tr");
+      rows.forEach((row, index) => {
+        const desc = row.querySelector("textarea").value.trim();
+        if (!desc) return;
+        newItems.push({
+          item: (index + 1).toString(),
+          description: desc,
+          gpn: row.querySelector(`input[name$="].gpn"]`)?.value.trim() || "",
+          uom: row.querySelector(`input[name$="].uom"]`)?.value.trim() || "",
+          country_of_origin: row.querySelector(`input[name$="].country_of_origin"]`)?.value.trim() || "",
+          quantity: row.querySelector(`input[name$="].quantity"]`)?.value.trim() || "",
+          fob_price_sgd: row.querySelector(`input[name$="].fob_price_sgd"]`)?.value.trim() || "",
+          fob_amount_sgd: row.querySelector(`input[name$="].fob_amount_sgd"]`)?.value.trim() || ""
+        });
+      });
+      updatedRaw.items = newItems;
+
+      const payload = {
+        jsondata: updatedRaw,
+        is_original: document.getElementById("editIsOriginal").value === "true"
+      };
+      // console.log(invoices.reference_number)
+
+      try {
+        const url = `${API_BASE}/v1/commercial-invoices/update/${encodeURIComponent(currentRefNo)}`;
+        console.log("Sending PATCH to:", url);
+
+        const res = await fetch(url, {
+          method: "PATCH",
+          headers: {
+            ...headers,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        console.log("Response status:", res.status);
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("Error response:", errorText);
+          throw new Error(`Save failed: ${res.status} - ${errorText}`);
+        }
+
+        const result = await res.json();
+        console.log("Save success:", result);
+
+        alert("Invoice updated successfully!");
+        bootstrap.Modal.getInstance(document.getElementById("ciplEditModal"))?.hide();
+        loadCipl();
+
+      } catch (err) {
+        console.error("Save error:", err);
+        alert("Failed to save changes:\n" + err.message);
+      }
+    });
+
+</script>
+
+<script> // preview model scripts
+  let currentRawJson = null;
+  let currentRefNo = null;
+
+  // Preview globals
+  let previewZipBlob = null;
+  let pdfBlobUrl = null;
+  let docxBlobUrl = null;
+  
+async function previewCipl1(refNo, isOriginal, JsonData = null) {
+    if (!refNo || refNo === "-") {
+        alert("Cannot preview: Reference number missing.");
+        return;
+    }
+
+    const modalEl = document.getElementById("ciplPreviewModal");
+    const pdfIframe = document.getElementById("pdfIframe");
+    const pdfLoading = document.getElementById("pdfLoading");
+    const pdfError = document.getElementById("pdfError");
+    const downloadPdfBtn = document.getElementById("downloadPdfBtn");
+    const downloadDocxBtn = document.getElementById("downloadDocxBtn");
+    const downloadZipBtn = document.getElementById("downloadZipBtn");
+
+    // Reset UI
+    pdfIframe.style.display = "none";
+    pdfLoading.classList.remove("d-none");
+    pdfError.classList.add("d-none");
+    pdfError.textContent = "";
+    downloadPdfBtn.disabled = true;
+    downloadDocxBtn.disabled = true;
+    downloadZipBtn.disabled = true;
+
+    // Clear old blob URLs to avoid memory leak
+    if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+    if (docxBlobUrl) URL.revokeObjectURL(docxBlobUrl);
+    pdfBlobUrl = null;
+    docxBlobUrl = null;
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+
+    try {
+        const payloadKey = refNo + (isOriginal ? "-ORI" : "-FIN");
+        currentRefNo = payloadKey
+        const payload = { [payloadKey]: JsonData || {} };
+
+        console.log("Requesting preview for:", payloadKey);
+
+        const res = await fetch(`${API_BASE}/v1/cipl/pdf-preview`, {
+            method: "POST",
+            headers: {
+                ...headers,
+                "accept": "application/zip"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+            const errText = await res.text().catch(() => "Unknown error");
+            throw new Error(`Server error ${res.status}: ${errText}`);
+        }
+
+        const contentType = res.headers.get("content-type") || "";
+        console.log("Content-Type:", contentType);
+
+        previewZipBlob = await res.blob();
+        console.log("ZIP size:", previewZipBlob.size, "bytes");
+
+        if (previewZipBlob.size < 2000) {
+            throw new Error("ZIP file is too small – likely invalid");
+        }
+
+        const zip = await JSZip.loadAsync(previewZipBlob);
+
+        let pdfBlob = null;
+        let docxBlob = null;
+        let pdfName = "document.pdf";
+        let docxName = "document.docx";
+
+        zip.forEach((path, file) => {
+            const base = path.split('/').pop().toLowerCase();
+            if (base.endsWith('.pdf')) {
+                pdfBlob = file.async("blob");
+                pdfName = path; // keep full path for better naming
+            } else if (base.endsWith('.docx') || base.endsWith('.doc')) {
+                docxBlob = file.async("blob");
+                docxName = path;
+            }
+        });
+
+        console.log("PDF found:", pdfBlob ? pdfName : "NOT FOUND");
+        console.log("DOCX found:", docxBlob ? docxName : "NOT FOUND");
+
+        // ─── PDF Preview & Download ────────────────────────────────────
+        if (pdfBlob) {
+            const pdfRealBlob = await pdfBlob;
+            pdfBlobUrl = URL.createObjectURL(pdfRealBlob);
+            pdfIframe.src = pdfBlobUrl;
+            pdfIframe.style.display = "block";
+            downloadPdfBtn.disabled = false;
+
+            // Store PDF blob for correct download
+            window.previewPdfBlob = pdfRealBlob;          // temporary global
+            window.previewPdfFileName = pdfName.split('/').pop() || `${refNo}.pdf`;
+        } else {
+            pdfError.textContent = "No valid PDF file found in ZIP (expected .pdf extension)";
+            pdfError.classList.remove("d-none");
+        }
+
+        // ─── DOCX Download only ────────────────────────────────────────
+        if (docxBlob) {
+            const docxRealBlob = await docxBlob;
+            docxBlobUrl = URL.createObjectURL(docxRealBlob);
+            downloadDocxBtn.disabled = false;
+            window.previewDocxBlob = docxRealBlob;
+            window.previewDocxFileName = docxName.split('/').pop() || `${refNo}.docx`;
+        }
+
+        // ZIP download always works
+        downloadZipBtn.disabled = false;
+
+    } catch (err) {
+        console.error("Preview error:", err);
+        pdfError.textContent = "Preview failed: " + err.message;
+        pdfError.classList.remove("d-none");
+    } finally {
+        pdfLoading.classList.add("d-none");
+    }
+}
+
+
+
+async function previewCipl(refNo, isOriginal, JsonData = null) {
+    if (!refNo || refNo === "-") {
+        alert("Missing reference number");
+        return;
+    }
+
+    // UI elements
+    const pdfIframe   = document.getElementById("pdfIframe");
+    const pdfLoading  = document.getElementById("pdfLoading");
+    const pdfError    = document.getElementById("pdfError");
+    const dlPdfBtn    = document.getElementById("downloadPdfBtn");
+    const dlDocxBtn   = document.getElementById("downloadDocxBtn");
+    const dlZipBtn    = document.getElementById("downloadZipBtn");
+
+    // Reset
+    if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+    if (docxBlobUrl) URL.revokeObjectURL(docxBlobUrl);
+    pdfBlobUrl = docxBlobUrl = null;
+
+    pdfIframe.style.display = "none";
+    pdfLoading.classList.remove("d-none");
+    pdfError.classList.add("d-none");
+    dlPdfBtn.disabled = dlDocxBtn.disabled = dlZipBtn.disabled = true;
+
+    const modal = new bootstrap.Modal(document.getElementById("ciplPreviewModal"));
+    modal.show();
+
+    try {
+        const key = refNo + (isOriginal ? "-ORI" : "-FIN");
+        currentRefNo = key
+        const payload = { [key]: JsonData || {} };
+
+        const response = await fetch(`${API_BASE}/v1/cipl/pdf-preview`, {
+            method: "POST",
+            headers: {
+                ...headers,
+                "accept": "application/zip"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status} – ${await response.text()}`);
+        }
+
+        const previewZipBlob = await response.blob();
+
+        if (previewZipBlob.size < 5000) {
+            throw new Error("ZIP file too small – probably invalid");
+        }
+
+        const zip = await JSZip.loadAsync(previewZipBlob);
+
+        let pdfBlobPromise = null;
+        let docxBlobPromise = null;
+
+        zip.forEach((path, file) => {
+            const name = path.split('/').pop().toLowerCase();
+            if (name.endsWith('.pdf')) {
+                pdfBlobPromise = file.async("blob");
+            } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
+                docxBlobPromise = file.async("blob");
+            }
+        });
+
+        // ──────────────────────────────
+        //   PDF handling
+        // ──────────────────────────────
+        if (pdfBlobPromise) {
+            const pdfBlob = await pdfBlobPromise;
+
+            // Very important: create fresh Blob with correct type
+            const correctPdfBlob = new Blob([pdfBlob], { type: "application/pdf" });
+
+            pdfBlobUrl = URL.createObjectURL(correctPdfBlob);
+            pdfIframe.src = pdfBlobUrl;
+            pdfIframe.style.display = "block";
+            dlPdfBtn.disabled = false;
+
+            // Store for download
+            window.tempPdfBlob = correctPdfBlob;
+            window.tempPdfName = refNo + (isOriginal ? "-ORI" : "-FIN") + ".pdf";
+        } else {
+            pdfError.textContent = "No PDF (.pdf) found in the archive";
+            pdfError.classList.remove("d-none");
+        }
+
+        // ──────────────────────────────
+        //   DOCX handling (download only)
+        // ──────────────────────────────
+        if (docxBlobPromise) {
+            const docxBlob = await docxBlobPromise;
+            const correctDocxBlob = new Blob([docxBlob], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
+
+            docxBlobUrl = URL.createObjectURL(correctDocxBlob);
+            dlDocxBtn.disabled = false;
+
+            window.tempDocxBlob = correctDocxBlob;
+            window.tempDocxName = refNo + (isOriginal ? "-ORI" : "-FIN") + ".docx";
+        }
+
+        dlZipBtn.disabled = false;
+
+    } catch (err) {
+        console.error(err);
+        pdfError.textContent = "Preview failed: " + err.message;
+        pdfError.classList.remove("d-none");
+    } finally {
+        pdfLoading.classList.add("d-none");
+    }
+}
+
+  function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById("downloadPdfBtn")?.addEventListener("click", () => {
+     if (pdfBlobUrl) {
+      fetch(pdfBlobUrl).then(r => r.blob()).then(blob => downloadBlob(blob, `${currentRefNo || "preview"}.pdf`));
+    }
+  });
+
+  document.getElementById("downloadDocxBtn")?.addEventListener("click", () => {
+    if (docxBlobUrl) {
+      fetch(docxBlobUrl).then(r => r.blob()).then(blob => downloadBlob(blob, `${currentRefNo || "preview"}.docx`));
+    }
+  });
+
+  document.getElementById("downloadZipBtn")?.addEventListener("click", () => {
+    if (previewZipBlob) {
+      downloadBlob(previewZipBlob, `${currentRefNo || "invoice"}.zip`);
+    }
+  });
+
+
+  document.getElementById("ciplPreviewModal")?.addEventListener("hidden.bs.modal", () => {
+    if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
+    if (docxBlobUrl) URL.revokeObjectURL(docxBlobUrl);
+    pdfBlobUrl = null;
+    docxBlobUrl = null;
+    previewZipBlob = null;
+  });
+
+
+</script>
