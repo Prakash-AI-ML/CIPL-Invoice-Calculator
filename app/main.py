@@ -378,6 +378,14 @@ async def user_list(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+@app.get("/app/invoices", response_class=HTMLResponse)
+async def user_list(request: Request):
+    description = "Navigated to Users page from CIPL"
+    await logs(request = request, endpoint='/app/cipl', action= 'cipl', description= description, is_backend= False)
+    logger.info(f"Navigated to Users page from CIPL by user: {request.state.user.get('username', 'unknown')}")
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
 @app.get("/app/delivery-order", response_class=HTMLResponse)
 async def user_list(request: Request):
     description = "Navigated to Users page from delivery-order"
