@@ -243,23 +243,62 @@ async function processForm(formId, endpoint, acceptTypes) {
 
         filesData = [];
 
-        for (const pdfName of pdfNames) {
-            const base = pdfName.replace(/\.pdf$/i, '');
-            const matchingDocx = docxNames.find(d => d.startsWith(base) && d.toLowerCase().endsWith('.docx'));
+        const fileMap = {};
 
-            const entry = {
-                name: base || pdfName,
-                pdfBlob: await zip.file(pdfName).async("blob"),
-                pdfUrl: null
-            };
-            entry.pdfBlob = new Blob([entry.pdfBlob], {type: "application/pdf"});
-            entry.pdfUrl = URL.createObjectURL(entry.pdfBlob);
+        // Helper → get only filename
+        function getFileName(path) {
+            return path.split('/').pop();
+        }
 
-            if (matchingDocx) {
-                entry.docxBlob = await zip.file(matchingDocx).async("blob");
-                entry.docxBlob = new Blob([entry.docxBlob], {type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"});
+        // Helper → remove extension
+        function getBaseName(filename) {
+            return filename.replace(/\.(pdf|docx)$/i, '');
+        }
+
+        
+        allNames.forEach(path => {
+        const lower = path.toLowerCase();
+
+        // 🚫 Ignore non-doc files (like result.json)
+        if (!lower.endsWith('.pdf') && !lower.endsWith('.docx')) {
+            return;
+        }
+
+        const filename = path.split('/').pop();
+        if (!filename) return;
+
+        const base = filename.replace(/\.(pdf|docx)$/i, '');
+
+        if (!fileMap[base]) {
+            fileMap[base] = { name: base };
+        }
+
+        if (lower.endsWith('.pdf')) {
+            fileMap[base].pdfPath = path;
+        }
+
+        if (lower.endsWith('.docx')) {
+            fileMap[base].docxPath = path;
+        }
+    });
+
+        // Step 2: build blobs
+        for (const base in fileMap) {
+            const file = fileMap[base];
+            const entry = { name: base };
+
+            if (file.pdfPath) {
+                const blob = await zip.file(file.pdfPath).async("blob");
+                entry.pdfBlob = new Blob([blob], { type: "application/pdf" });
+                entry.pdfUrl = URL.createObjectURL(entry.pdfBlob);
+            }
+
+            if (file.docxPath) {
+                const blob = await zip.file(file.docxPath).async("blob");
+                entry.docxBlob = new Blob([blob], {
+                    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                });
                 entry.docxUrl = URL.createObjectURL(entry.docxBlob);
-                entry.name = base;
             }
 
             filesData.push(entry);
