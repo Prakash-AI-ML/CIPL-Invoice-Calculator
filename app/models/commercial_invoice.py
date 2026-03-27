@@ -38,6 +38,18 @@ class CommercialInvoice(BaseDB):
         comment="e.g. ES-00130-ori / ES-00130-fin"
     )
 
+    job_number = Column(
+        String(800),
+        nullable=True,
+        comment="TPL/00xxP/MM/YY"
+    )
+
+    group_number = Column(
+        String(900),
+        nullable=True,
+        comment="ES-00136,ES-00137,ES-00140,ES-00141..."
+    )
+
     # Full original JSON data (recommended to store the complete parsed structure)
     raw_json = Column(
         JSON,                    # or JSON (PostgreSQL) / MEDIUMTEXT (MySQL)

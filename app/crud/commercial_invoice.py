@@ -11,7 +11,7 @@ from app.schemas.commercial_invoice import (
 )
 
 
-async def create_commercial_invoice(
+async def create_commercial_invoice1(
     db: AsyncSession,
     data: CommercialInvoiceCreate,
     created_by: int
@@ -41,6 +41,38 @@ async def create_commercial_invoice(
     # Return as dict (Pydantic model)
     return CommercialInvoiceOut.model_validate(db_obj).model_dump()
 
+async def create_commercial_invoice(
+    db: AsyncSession,
+    data: CommercialInvoiceCreate,
+    created_by: int
+) -> Dict[str, Any]:
+
+    result = await db.execute(
+        select(CommercialInvoice).where(
+            CommercialInvoice.reference_number == data.reference_number
+        )
+    )
+    db_obj = result.scalars().first()
+
+    update_data = data.model_dump(exclude_none=True)
+    update_data["updated_by"] = created_by
+    update_data["raw_json"] = update_data.pop("jsondata")
+
+    if db_obj:
+        # ✅ UPDATE existing record
+        for key, value in update_data.items():
+            setattr(db_obj, key, value)
+
+    else:
+        # ✅ CREATE new record
+        update_data["created_by"] = created_by
+        db_obj = CommercialInvoice(**update_data)
+        db.add(db_obj)
+
+    await db.commit()
+    await db.refresh(db_obj)
+
+    return CommercialInvoiceOut.model_validate(db_obj).model_dump()
 
 async def get_commercial_invoices(
     db: AsyncSession,

@@ -79,6 +79,10 @@
                                 <label class="form-label fw-semibold">Divided By (optional)</label>
                                 <input type="number" step="any" class="form-control" id="excelDividedBy">
                             </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Job Number (optional)</label>
+                                <input type="string" step="any" class="form-control" id="excelJobNumber">
+                            </div>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-primary btn-lg">Generate from Excel</button>
                             </div>
@@ -95,6 +99,10 @@
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Divided By (optional)</label>
                                 <input type="number" step="any" class="form-control" id="pdfDividedBy">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Job Number (optional)</label>
+                                <input type="string" step="any" class="form-control" id="pdfJobNumber">
                             </div>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-primary btn-lg">Generate from PDF</button>
@@ -130,7 +138,9 @@
                         <button id="downloadCurrentPdfBtn" class="btn btn-success">⬇ Current PDF</button>
                         <button id="downloadCurrentDocxBtn" class="btn btn-primary">⬇ Current DOCX</button>
                         <button id="downloadCurrentBothBtn" class="btn btn-info">⬇ Current Both (ZIP)</button>
+                        <button id="saveCurrentBtn" class="btn btn-outline-success">💾 Save Current</button>
                         <button id="downloadAllBtn" class="btn btn-warning">⬇ Download All (ZIP)</button>
+                        <button id="saveAllBtn" class="btn btn-outline-primary">💾 Save All</button>
                     </div>
                 </div>
 
@@ -202,6 +212,7 @@ async function processForm(formId, endpoint, acceptTypes) {
     const form = document.getElementById(formId);
     const fileInput = form.querySelector('input[type="file"]');
     const dividedInput = form.querySelector('input[type="number"]');
+    const jobNumberInput = form.querySelector('input[type="string"]');
 
     const files = fileInput.files;
     if (files.length === 0) {
@@ -210,6 +221,7 @@ async function processForm(formId, endpoint, acceptTypes) {
     }
 
     const dividedBy = dividedInput.value.trim();
+    const jobNumber = jobNumberInput.value.trim();
     const token = localStorage.getItem("token") || getCookie("access_token") || "";
     const headers = { "Authorization": `Bearer ${token}` };
     if (dividedBy) headers["divided_by"] = dividedBy;
@@ -236,6 +248,24 @@ async function processForm(formId, endpoint, acceptTypes) {
 
         zipBlob = await res.blob();
         const zip = await JSZip.loadAsync(zipBlob);
+        // ── Add this block ────────────────────────────────────────
+        let resultJson = null;
+        const resultJsonFile = zip.file("results.json") || zip.file("results.JSON"); // case insensitive fallback
+
+        if (resultJsonFile) {
+            const jsonText = await resultJsonFile.async("string");
+            try {
+                resultJson = JSON.parse(jsonText);
+                window.resultJson = resultJson;           // ← global access
+                window.dividedByValue = dividedBy || null; // store dividedBy used for this batch
+                window.jobNumberValue = jobNumber || null;
+                
+            } catch (e) {
+                console.warn("Failed to parse results.json", e);
+            }
+        } else {
+            console.warn("result.json not found in ZIP");
+        }
 
         const allNames = Object.keys(zip.files);
         const pdfNames = allNames.filter(n => n.toLowerCase().endsWith('.pdf'));
@@ -401,5 +431,141 @@ function getCookie(name) {
     return null;
 }
 </script>
+
+<script>
+    // ────────────────────────────────────────────────
+// Save functionality
+// ────────────────────────────────────────────────
+
+const saveCurrentBtn = document.getElementById('saveCurrentBtn');
+const saveAllBtn      = document.getElementById('saveAllBtn');
+
+async function saveInvoices(invoicesToSave) {
+    if (!invoicesToSave || invoicesToSave.length === 0) {
+        alert("No invoices available to save.");
+        return;
+    }
+
+    const token = localStorage.getItem("token") || getCookie("access_token") || "";
+    if (!token) {
+        alert("Authentication token not found. Please log in again.");
+        return;
+    }
+
+    const headers = {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+    };
+
+    let successCount = 0;
+    let failed = [];
+
+    // Show loading feedback (you can enhance with better UI)
+    saveAllBtn.disabled = true;
+    saveCurrentBtn.disabled = true;
+    saveAllBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+    saveCurrentBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+
+    for (const inv of invoicesToSave) {
+        try {
+            const res = await fetch(`${API_BASE}/v1/commercial-invoices/create`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(inv)
+            });
+
+            if (!res.ok) {
+                const errText = await res.text();
+                throw new Error(`Save failed for ${inv.reference_number}: ${res.status} - ${errText}`);
+            }
+
+            successCount++;
+            // Optional: await res.json() if you want to do something with response
+
+        } catch (err) {
+            console.error(err);
+            failed.push(inv.reference_number);
+        }
+    }
+
+    // Restore button state
+    saveAllBtn.disabled = false;
+    saveCurrentBtn.disabled = false;
+    saveAllBtn.innerHTML = '💾 Save All Invoices';
+    saveCurrentBtn.innerHTML = '💾 Save Current';
+
+    if (successCount === invoicesToSave.length) {
+        alert(`Successfully saved ${successCount} invoice(s)!`);
+    } else {
+        alert(`Saved ${successCount} of ${invoicesToSave.length} invoice(s).\nFailed: ${failed.join(", ")}`);
+    }
+}
+
+// Helper: prepare payload for one reference (from result.json structure)
+function prepareInvoicePayload(key, value, dividedBy, jobNumber, groupNumber) {
+    const isOriginal = !dividedBy;  // true if no dividedBy (or 0/falsy)
+
+    return {
+        reference_number: isOriginal 
+            ? `${key}-ORI`
+            : `${key}-FNL`,
+        job_number:jobNumber,
+        group_number: groupNumber,
+        jsondata: value,               // the whole object (shipper, items, totals, etc.)
+        is_original: isOriginal,
+        divided_by: isOriginal ? null : Number(dividedBy) || 0
+    };
+}
+
+// ─── Save Current ─────────────────────────────────────
+saveCurrentBtn.addEventListener('click', () => {
+    if (filesData.length === 0 || currentIndex >= filesData.length) {
+        alert("No document selected.");
+        return;
+    }
+
+    const currentFile = filesData[currentIndex];
+    const refKey = currentFile.name.replace(/^CIPL_/, '');  // e.g. "ES-00116"
+    const group_number = Object.keys(window.resultJson).join(',');
+    
+    // console.log(window.jobNumberValue)
+
+    // We need the original JSON data — but frontend only has ZIP filenames
+    // Assumption: you must have parsed result.json earlier or received it separately
+    // For now — we'll assume you have a global `resultJson` object (see next step)
+
+    if (!window.resultJson || !window.resultJson[refKey]) {
+        alert("Invoice data not available for this reference. Cannot save.");
+        return;
+    }
+
+    const payload = prepareInvoicePayload(refKey, window.resultJson[refKey], window.dividedByValue, window.jobNumberValue, group_number);
+
+    saveInvoices([payload]);
+});
+
+// ─── Save All ─────────────────────────────────────────
+saveAllBtn.addEventListener('click', () => {
+    if (filesData.length === 0) {
+        alert("No documents available.");
+        return;
+    }
+
+    if (!window.resultJson) {
+        alert("Invoice data (result.json) not loaded. Cannot save.");
+        return;
+    }
+
+    const dividedBy = window.dividedByValue; // from form input or stored
+    const group_number = Object.keys(window.resultJson).join(',');
+
+    const payloads = Object.keys(window.resultJson).map(key => {
+        return prepareInvoicePayload(key, window.resultJson[key], dividedBy, window.jobNumberValue, group_number);
+    });
+
+    saveInvoices(payloads);
+});
+</script>
+
 </body>
 </html>

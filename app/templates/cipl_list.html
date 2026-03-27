@@ -43,6 +43,8 @@
     <thead class="table-light">
       <tr>
         <th>S. No.</th>
+        <th>JOB NO</th>
+        <th>GROUP NO</th>
         <th>REF NO</th>
         <th>DATE</th>
         <th>CONTAINER DETAILS</th>
@@ -125,14 +127,24 @@
       <div class="modal-body">
         <form id="ciplEditForm">
           <input type="hidden" id="editCiplId" name="id">
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <h6>JOB NO</h6>
+              <textarea class="form-control mb-2" rows="4" id="editJobNumber" name="raw_json.job_number" placeholder="TPL/00xxP/MM/YY"></textarea>
+            </div>
+            <div class="col-md-6">
+              <h6>GROUP NO</h6>
+              <textarea class="form-control mb-2" rows="4" id="editGroupNumber" name="raw_json.group_number" placeholder="ES-00140,ES-00141..."></textarea>
+            </div>
+          </div>
 
           <div class="row mb-4">
             <div class="col-md-6">
-              <h6>Exporter / Seller</h6>
+              <h6>SELLER</h6>
               <textarea class="form-control mb-2" rows="4" id="editExporter" name="raw_json.exporter" placeholder="Exentec Singapore Pte Ltd\n8 Tuas South Lane\n..."></textarea>
             </div>
             <div class="col-md-6">
-              <h6>Consignee / Buyer</h6>
+              <h6>CONSIGNEE</h6>
               <textarea class="form-control mb-2" rows="4" id="editConsignee" name="raw_json.consignee" placeholder="Everest Co. Ltd (Head Office)\n..."></textarea>
             </div>
           </div>
@@ -171,19 +183,19 @@
             </div>
           </div>
 
-          <h6>ITEM DESCRIPTION</h6>
+          <h6>ITEMS</h6>
           <div class="table-responsive mb-4">
             <table class="table table-bordered" id="editItemsTable">
               <thead class="table-light">
                 <tr>
-                  <th>S.No</th>
+                  <th>ITEM NO.</th>
                   <th>DESCRIPTION</th>
-                  <th>SERIAL NO</th>
+                  <th>SERIAL NO.</th>
                   <th>UOM</th>
                   <th>COO</th>
                   <th>QTY</th>
-                  <th>UNIT COST ($)</th>
-                  <th>TOTAL ($)</th>
+                  <th>UNIT COST</th>
+                  <th>TOTAL - SGD $</th>
                   <th><button type="button" class="btn btn-sm btn-success" id="addItemRow">+ Add Row</button></th>
                 </tr>
               </thead>
@@ -204,7 +216,7 @@
               <input type="text" class="form-control" id="editTotalPackages" name="raw_json.packing_details.total['TOTAL PACKAGES:']">
             </div>
             <div class="col-md-3">
-              <label class="form-label">GROSS WEIGHT (kgs)</label>
+              <label class="form-label">GROSS WEIGHT</label>
               <input type="text" class="form-control" id="editGrossWeight" name="raw_json.packing_details.total['GROSS WEIGHT:']">
             </div>
             <div class="col-md-3">
@@ -212,7 +224,7 @@
               <input type="text" class="form-control" id="editTotalCbm" name="raw_json.packing_details.total['TOTAL CBM (m³) :']">
             </div>
             <div class="col-md-3">
-              <label class="form-label">TOTAL INVOICE VALUE ($)</label>
+              <label class="form-label">TOTAL INVOICE VALUE</label>
               <input type="text" class="form-control" id="editTotalAmount" name="raw_json.total">
             </div>
           </div>
@@ -278,6 +290,8 @@
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${index + 1}</td>
+          <td>${c.job_number ?? "-"}</td>
+          <td>${c.group_number ?? "-"}</td>
           <td>${refNo}</td>
           <td>${c.raw_json?.reference_date ?? "-"}</td>
           <td>${c.raw_json?.packing_details?.shipping ?? "-"}</td>
@@ -376,6 +390,8 @@
         document.getElementById("ciplModalTitle").textContent = `Edit ${invoice.reference_number || invoice.raw_json.reference_no || 'Invoice'}`;
 
         // ─── Header / Labels ────────────────────────────────────────────────────────
+        setValue("editJobNumber",        invoice.job_number || "");
+        setValue("editGroupNumber",        invoice.group_number || "");
         setValue("editRefNo",         invoice.raw_json.reference_no || invoice.raw_json.labels?.["REF NO :"] || "");
         setValue(
           "editDate",
@@ -386,8 +402,8 @@
         setValue("editPortLoading",   invoice.raw_json.port_of_loading || invoice.raw_json.labels?.["PORT OF LOADING :"] || "");
         setValue("editPortDischarge", invoice.raw_json.port_of_discharge || invoice.raw_json.labels?.["PORT OF DISCHARGE :"] || "");
         setValue("editTerms",         invoice.raw_json.labels?.["TERMS :"] || "DDP");
-        setValue("editContNo",        invoice.raw_json.labels?.["CONT NO :"] || "TBA");
-        setValue("editSealNo",        invoice.raw_json.labels?.["SEAL NO :"] || "TBA");
+        setValue("editContNo",        invoice.raw_json.labels?.["CONT NO :"] || "");
+        setValue("editSealNo",        invoice.raw_json.labels?.["SEAL NO :"] || "");
 
         // ─── Addresses ──────────────────────────────────────────────────────────────
         setValue("editExporter",      invoice.raw_json.shipper?.join("\n") || "");
@@ -425,8 +441,10 @@
             uom:         item.uom || "",
             coo:         item.country_of_origin || "",
             qty:         item.quantity || "",
-            unit_cost:   cleanPrice(item.fob_price_sgd),
-            total:       cleanPrice(item.fob_amount_sgd)
+            unit_cost:   item.fob_price_sgd.replace(/[$']/g, '').replace(/\s+/g, '') || "",
+            total:       item.fob_amount_sgd.replace(/[$']/g, '').replace(/\s+/g, '') || ""
+            // unit_cost:   cleanPrice(item.fob_price_sgd),
+            // total:       cleanPrice(item.fob_amount_sgd)
           });
         });
 
@@ -475,8 +493,8 @@
         <td><input type="text" class="form-control" name="items[${rowIndex}].uom" value="${escapeHtml(item.uom || "")}"></td>
         <td><input type="text" class="form-control" name="items[${rowIndex}].country_of_origin" value="${escapeHtml(item.coo || "")}"></td>
         <td><input type="number" step="any" class="form-control" name="items[${rowIndex}].quantity" value="${item.qty || ""}"></td>
-        <td><input type="number" step="0.01" class="form-control" name="items[${rowIndex}].fob_price_sgd" value="${item.unit_cost || ""}"></td>
-        <td><input type="number" step="0.01" class="form-control" name="items[${rowIndex}].fob_amount_sgd" value="${item.total || ""}"></td>
+        <td><input type="text" class="form-control" name="items[${rowIndex}].fob_price_sgd" value="${item.unit_cost || ""}"></td>
+        <td><input type="text" class="form-control" name="items[${rowIndex}].fob_amount_sgd" value="${item.total || ""}"></td>
         <td><button type="button" class="btn btn-sm btn-danger remove-row">×</button></td>
       `;
       tbody.appendChild(tr);
@@ -542,7 +560,10 @@
       // Apply updates from form
       updatedRaw.reference_no = refNo;
       updatedRaw.reference_date = toInvoiceDate(document.getElementById("editDate").value) || updatedRaw.reference_date;
-
+      
+      // updatedRaw.job_number = document.getElementById("editJobNumber").value.trim() || updatedRaw.job_number;
+      // updatedRaw.group_number = document.getElementById("editGroupNumber").value.trim() || updatedRaw.group_number;
+      
       updatedRaw.labels = {
         ...updatedRaw.labels,
         "REF NO :": refNo,
@@ -550,8 +571,8 @@
         "PORT OF LOADING :": document.getElementById("editPortLoading").value.trim(),
         "PORT OF DISCHARGE :": document.getElementById("editPortDischarge").value.trim(),
         "TERMS :": document.getElementById("editTerms").value.trim() || "DDP",
-        "CONT NO :": document.getElementById("editContNo").value.trim() || "TBA",
-        "SEAL NO :": document.getElementById("editSealNo").value.trim() || "TBA"
+        "CONT NO :": document.getElementById("editContNo").value.trim() || "",
+        "SEAL NO :": document.getElementById("editSealNo").value.trim() || ""
       };
 
       updatedRaw.shipper = document.getElementById("editExporter").value.split("\n").filter(line => line.trim());
@@ -590,6 +611,8 @@
 
       const payload = {
         jsondata: updatedRaw,
+        job_number : document.getElementById("editJobNumber").value.trim() || updatedRaw.job_number,
+        group_number : document.getElementById("editGroupNumber").value.trim() || updatedRaw.group_number,
         is_original: document.getElementById("editIsOriginal").value === "true"
       };
       // console.log(invoices.reference_number)
