@@ -162,7 +162,7 @@ async def generate_tally_sheet(
         # print(df.head().to_string())
 
         # Output file
-        output_excel = os.path.join(tmp_dir, "TALLY_SHEET.xlsx")
+        output_excel = os.path.join(tmp_dir, f"TALLY_SHEET {df['REF NO'][0]}-{df['REF NO'][df.shape[0]-1]}.xlsx" if df.shape[0] >=2 else f"TALLY_SHEET {df['REF NO'][0]}.xlsx" if df.shape[0] == 1 else 'TALLY_SHEET.xlsx')
 
         # This is the critical part — catch & log any error
         try:
@@ -200,4 +200,67 @@ async def generate_tally_sheet(
     #             print(f"Cleaned up: {tmp_dir}")
     #         except Exception as cleanup_err:
     #             print(f"Cleanup failed: {cleanup_err}")
+
+
+
+@router.post("/generate/data")
+async def generate_tally_sheet(
+    data: dict
+):
+    
+    # We'll keep the temp directory until AFTER we send the response
+    # → use manual cleanup instead of with-statement
+    tmp_dir = None
+    try:
+        tmp_dir = Path(tempfile.mkdtemp(prefix="tally_"))
+        print(f"Created temp dir: {tmp_dir}")
+
+        
+        # ─── Process documents ────────────────────────────────
+        original_data, final_data = get_tally_using_db_data(data = data)
+        
+
+        if not original_data or not final_data:
+            raise HTTPException(400, "No valid data extracted from uploaded Word files")
+
+        df = get_tally_data(original_data, final_data)
+        print("DataFrame shape:", df.shape)
+        # print(df.head().to_string())
+
+        # Output file
+        output_excel = os.path.join(tmp_dir, f"TALLY_SHEET {df['REF NO'][0]}-{df['REF NO'][df.shape[0]-1]}.xlsx" if df.shape[0] >=2 else f"TALLY_SHEET {df['REF NO'][0]}.xlsx" if df.shape[0] == 1 else 'TALLY_SHEET.xlsx' )
+
+        # This is the critical part — catch & log any error
+        try:
+            create_tally_sheet(df, output_excel)
+        except Exception as exc:
+            print("ERROR during create_tally_sheet:")
+            traceback.print_exc()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to generate Excel file: {str(exc)}"
+            )
+
+     
+        # Send file — file will be kept open until response is sent
+        return FileResponse(
+            path=output_excel,
+            filename="TALLY_SHEET.xlsx",
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        traceback.print_exc()
+
+    except Exception as e:
+        raise HTTPException(500, f"Server error: {str(e)}")
+
+    # finally:
+    #     # Clean up temp folder — runs even if exception occurred
+    #     if tmp_dir is not None and tmp_dir.exists():
+    #         try:
+    #             shutil.rmtree(tmp_dir, ignore_errors=True)
+    #             print(f"Cleaned up: {tmp_dir}")
+    #         except Exception as cleanup_err:
+    #             print(f"Cleanup failed: {cleanup_err}")
+
+
 

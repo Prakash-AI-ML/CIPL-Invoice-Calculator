@@ -82,8 +82,11 @@ def tally_sheet_p(writer, df1: pd.DataFrame):
     workbook = writer.book
     worksheet = writer.sheets['ORDINARY']
 
-    wrap_center_format = workbook.add_format({
+    wrap_format = workbook.add_format({
         'text_wrap': True, 'align': 'left', 'border': 1, 'valign': 'top'
+    })
+    wrap_center_format = workbook.add_format({
+        'text_wrap': True, 'align': 'center', 'border': 1, 'valign': 'vcenter'
     })
     text_format = workbook.add_format({
         'align': 'center', 'border': 1, 'valign': 'vcenter'
@@ -100,8 +103,8 @@ def tally_sheet_p(writer, df1: pd.DataFrame):
 
     # Column widths
     worksheet.set_column('A:A', 9, text_format)
-    worksheet.set_column('B:B', 49, wrap_center_format)
-    worksheet.set_column('C:C', 44, text_format)
+    worksheet.set_column('B:B', 49, wrap_format)
+    worksheet.set_column('C:C', 44, wrap_center_format)
     worksheet.set_column('D:F', 14, num_format)
 
     # Bold last row
@@ -123,7 +126,10 @@ def tally_sheet_f(writer, df):
     worksheet = writer.sheets['COMMERCIAL']
 
     # Reuse same formats
-    wrap_center_format = workbook.add_format({'text_wrap': True, 'align': 'left', 'border': 1, 'valign': 'top'})
+    wrap_format = workbook.add_format({'text_wrap': True, 'align': 'left', 'border': 1, 'valign': 'top'})
+    wrap_center_format = workbook.add_format({
+        'text_wrap': True, 'align': 'center', 'border': 1, 'valign': 'vcenter'
+    })
     text_format = workbook.add_format({'align': 'center', 'border': 1, 'valign': 'vcenter'})
     num_format = workbook.add_format({'num_format': '#,##0.00', 'align': 'center', 'border': 1, 'valign': 'vcenter'})
     header_format = workbook.add_format({'bold': True, 'align': 'center', 'valign': 'vcenter', 'border': 1, 'text_wrap': True})
@@ -131,8 +137,8 @@ def tally_sheet_f(writer, df):
 
     # Column widths — adjust according to your full columns
     worksheet.set_column('A:A', 9, text_format)
-    worksheet.set_column('B:B', 49, wrap_center_format)
-    worksheet.set_column('C:C', 44, text_format)
+    worksheet.set_column('B:B', 49, wrap_format)
+    worksheet.set_column('C:C', 44, wrap_center_format)
     worksheet.set_column('D:D', 10, num_format)
     worksheet.set_column('E:E', 12, num_format)
     worksheet.set_column('F:F', 10, num_format)
@@ -169,4 +175,32 @@ def create_tally_sheet(df: pd.DataFrame, output_path: str | Path):
         writer = tally_sheet_f(writer, df)
 
 
-
+def get_tally_using_db_data(data):
+    original, final = [], []
+    for key, value in data.items():
+        # value = value.lower().replace('kgs', '').replace('cbm', '')
+        if value['packing_details']['total']['GROSS WEIGHT:']:
+            val = value['packing_details']['total']['GROSS WEIGHT:'].lower().replace('kgs', '').strip()
+            num = float(val.replace(',', ''))
+            val = f"{num:,.2f}"
+        if value['packing_details']['total']['TOTAL CBM (m³) :']:
+            val_ = value['packing_details']['total']['TOTAL CBM (m³) :'].lower().replace('cbm', '').strip()
+        if value['packing_details']['shipping']:
+            if len(value['packing_details']['shipping']) ==1:
+                shipping = value['packing_details']['shipping'][0]
+                if value['labels']['CONT NO :'] != "TBA" or value['labels']['SEAL NO :'] != "TBA":
+                    shipping = f"{value['labels']['CONT NO :']}/{value['labels']['SEAL NO :']}\n{value['labels']['REF NO :']} - {value['labels']['CONT NO :']} / 40'OT"
+        
+        dic = {'REF NO': value['reference_no'] if value['reference_no'] else '', 
+            'PACKING DETAILS': '\n'.join(value['packing_details']['details']) if value['packing_details']['details'] else '',
+            'CONTAINER DETAILS': shipping if value['packing_details']['shipping'] else '',
+            'TOTAL PACKAGES': value['packing_details']['total']["TOTAL PACKAGES:"] if value['packing_details']['total']['TOTAL PACKAGES:'] else '',
+            'GROSS WEIGHT': val if value['packing_details']['total']['GROSS WEIGHT:'] else '',
+            'TOTAL CBM (m³)': val_ if value['packing_details']['total']['TOTAL CBM (m³) :'] else '',
+            'TOTAL': value['total'] if value['total'] else '',
+                }
+        if key.endswith('ORI'):
+            original.append(dic)
+        else:
+            final.append(dic)
+    return original, final
