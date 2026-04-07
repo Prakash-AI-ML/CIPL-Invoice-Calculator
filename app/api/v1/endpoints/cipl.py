@@ -366,4 +366,86 @@ async def generate_docx_and_pdf(
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
 
+@router.post("/download-docx")
+async def download_docx(
+    request: Request,
+    divided_by: Optional[float] = Header(None, convert_underscores=False),
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_user_permissions_detailed),
+):
+    form = await request.form()
+    mapping_data = await get_cipl_descs(db)
+
+    DESCRIPTIONS_DATA = {
+        "item_id": [],
+        "original": [],
+        "modified": [],
+        "lines": []
+    }
+
+    for row in mapping_data:
+        DESCRIPTIONS_DATA["item_id"].append(row.item_id)
+        DESCRIPTIONS_DATA["original"].append(row.original)
+        DESCRIPTIONS_DATA["modified"].append(row.modified)
+        DESCRIPTIONS_DATA["lines"].append(row.lines)
+
+    if not form:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+
+    
+    try:
+        
+        result_data = {}
+        results = {
+            'commercial_invoice': {},
+            "packing_list":{}
+        }
+        # Process each uploaded file
+        for field_name, file in form.items():
+            file_bytes = await file.read()
+            original_filename = file.filename or f"input_{uuid.uuid4().hex[:8]}"
+
+            if not original_filename.lower().endswith(('.pdf')):
+                raise HTTPException(status_code=415, detail=f"Unsupported file type: {original_filename}")
+
+            file_io = io.BytesIO(file_bytes)
+
+            # Read Excel sheets
+            if original_filename.lower().endswith('.pdf'):
+                # Read PDF
+                with pdfplumber.open(file_io) as pdf:
+                    page = pdf.pages[0]
+
+                data = analysis_pdf_cipl(page, divided_by = divided_by, DESCRIPTIONS_DATA = DESCRIPTIONS_DATA)
+                if data['invoice_type'] == 'COMMERCIAL INVOICE':
+                    results['commercial_invoice'][data['reference_no']] = data
+                else:
+                    results['packing_list'][data['reference_no']] = data
+
+        cipl_data = create_cipl_data(results, DESCRIPTIONS_DATA = DESCRIPTIONS_DATA)
+
+
+        for key, value in cipl_data.items():
+
+            # Prepare clean filenames
+            base_name = f'CIPL_{key}'
+            docx_filename = f"{base_name}.docx"
+            # ─── Create DOCX in memory ───────────────────────────────────────
+            document = create_documents(data=value, filename=docx_filename)
+
+            docx_buffer = io.BytesIO()
+            document.save(docx_buffer)
+            docx_buffer.seek(0)
+
+            return StreamingResponse(
+                                    docx_buffer,
+                                    media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                    headers={"Content-Disposition": f'attachment; filename="{base_name}.docx"'},
+                                )
+
+               
+    except Exception as e:
+        logging.error(f"Error processing files: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+
 

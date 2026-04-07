@@ -28,7 +28,7 @@
 <!-- Bootstrap 5 bundle (includes Popper) – ONLY ONE INCLUDE -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-<div class="d-flex justify-content-between mb-3">
+<!-- <div class="d-flex justify-content-between mb-3">
   <div></div>
   {% set settings_buttons = request.state.user.menus['settings']['buttons'] %}
   {% if 'clients_crud' in settings_buttons | map(attribute='button_name') | list %}
@@ -36,12 +36,28 @@
     Add Description
   </button>
   {% endif %}
+</div> -->
+
+
+<!-- Action Buttons (shown only when rows are selected) -->
+<div class="d-flex justify-content-between mb-3" id="actionButtons" style="display: none !important;">
+  <div>
+    <button class="btn btn-success me-2" id="generateDocxBtn">
+      <i class="bi bi-file-earmark-word me-1"></i> Generate DOCX
+    </button>
+    <button class="btn btn-primary" id="generateTallyBtn">
+      <i class="bi bi-file-earmark-excel me-1"></i> Generate Tally
+    </button>
+  </div>
 </div>
 
 <div class="table-responsive">
   <table class="table table-bordered table-hover" id="ciplListTable">
     <thead class="table-light">
       <tr>
+        <th class="checkbox-col">
+          <input type="checkbox" id="selectAllCheckbox">
+        </th>
         <th>S. No.</th>
         <th>JOB NO</th>
         <th>GROUP NO</th>
@@ -258,20 +274,22 @@
 
 <div id="ciplError" class="alert alert-danger d-none"></div>
 
-<script> // cipl list scripts
+<script>
   const API_BASE_URL = API_BASE + "/v1/cipl-desc";
-
   const headers = {
     "Content-Type": "application/json",
     "Authorization": `Bearer ${localStorage.getItem("token") || getCookie("access_token")}`,
     "accept": "application/json"
   };
 
+  let selectedData = [];   // Array of { refNo, isOriginal, rawJson }
+
   const ciplListTableBody = document.querySelector("#ciplListTable tbody");
   const ciplLoading = document.getElementById("ciplLoading");
   const ciplError = document.getElementById("ciplError");
+  const actionButtons = document.getElementById("actionButtons");
 
-
+  // ==================== LOAD TABLE ====================
   async function loadCipl() {
     if ($.fn.DataTable.isDataTable('#ciplListTable')) {
       $('#ciplListTable').DataTable().destroy();
@@ -279,6 +297,8 @@
 
     ciplLoading.classList.remove("d-none");
     ciplListTableBody.innerHTML = "";
+    selectedData = [];
+    updateActionButtons();
 
     try {
       const res = await fetch(`${API_BASE}/v1/commercial-invoices/read`, { headers });
@@ -287,8 +307,21 @@
 
       data.forEach((c, index) => {
         const refNo = c.raw_json?.reference_no ?? "-";
+        const isOriginal = c.is_original === true;
+
         const tr = document.createElement("tr");
+        tr.dataset.refNo = refNo;
+        tr.dataset.isOriginal = isOriginal;
+
+        // Store raw_json safely as data attribute (stringified)
+        tr.dataset.rawJson = JSON.stringify(c.raw_json || {});
+
         tr.innerHTML = `
+          <td class="checkbox-col">
+            <input type="checkbox" class="row-checkbox" 
+                   data-ref="${refNo}" 
+                   data-original="${isOriginal}">
+          </td>
           <td>${index + 1}</td>
           <td>${c.job_number ?? "-"}</td>
           <td>${c.group_number ?? "-"}</td>
@@ -299,27 +332,17 @@
           <td>${c.raw_json?.packing_details?.total?.["GROSS WEIGHT:"] ?? "-"}</td>
           <td>${c.raw_json?.packing_details?.total?.["TOTAL CBM (m³) :"] ?? "-"}</td>
           <td>${c.raw_json?.total ?? "-"}</td>
-          <td>${c.is_original === true ? 'ORI' : 'FIN'}</td>
+          <td>${isOriginal ? 'ORI' : 'FIN'}</td>
           <td>${c.status ?? "-"}</td>
           <td style="text-align:center;">
             <div class="dropdown d-inline-block">
-              <button 
-                class="btn btn-sm btn-link text-dark p-0 dropdown-toggle no-caret" 
-                type="button" 
-                data-bs-toggle="dropdown" 
-                data-bs-auto-close="true"
-                data-bs-boundary="window"
-                aria-expanded="false"
-                title="Actions"
-              >
+              <button class="btn btn-sm btn-link text-dark p-0 dropdown-toggle no-caret" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-three-dots-vertical fs-5"></i>
               </button>
-              <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                <li><a class="dropdown-item" href="#" onclick='previewCipl("${refNo}", ${c.is_original}, ${JSON.stringify(c.raw_json)})'><i class="bi bi-eye me-2"></i>Preview</a></li>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#" onclick='previewCipl("${refNo}", ${isOriginal}, ${JSON.stringify(c.raw_json)})'><i class="bi bi-eye me-2"></i>Preview</a></li>
                 <li><a class="dropdown-item" href="#" onclick="editCipl(${c.id})"><i class="bi bi-pencil me-2"></i>Edit</a></li>
                 <li><a class="dropdown-item text-danger" href="#" onclick="openDelete(${c.id})"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                <li><hr class="dropdown-divider"></li>
-                
               </ul>
             </div>
           </td>
@@ -329,23 +352,21 @@
 
       // Initialize DataTable
       const table = $('#ciplListTable').DataTable({
-        order: [[0, 'asc']]
+        order: [[1, 'asc']],
+        columnDefs: [{ orderable: false, targets: 0 }]
       });
 
-      // Re-attach Bootstrap dropdowns after every draw (critical fix)
       table.on('draw.dt', function () {
         document.querySelectorAll('#ciplListTable .dropdown-toggle').forEach(el => {
-          if (el._bsDropdown) {
-            el._bsDropdown.dispose();
-          }
-          el._bsDropdown = new bootstrap.Dropdown(el, {
-            boundary: 'window'
-          });
+          if (el._bsDropdown) el._bsDropdown.dispose();
+          el._bsDropdown = new bootstrap.Dropdown(el, { boundary: 'window' });
         });
       });
 
-      // Force initial draw to apply handler immediately
       table.draw();
+
+      // Attach checkbox listeners after table is rendered
+      attachCheckboxListeners();
 
     } catch (err) {
       ciplError.textContent = "Failed to load descriptions: " + err.message;
@@ -355,12 +376,138 @@
     }
   }
 
+  // ==================== CHECKBOX HANDLING ====================
+  function attachCheckboxListeners() {
+    const selectAll = document.getElementById("selectAllCheckbox");
+
+    selectAll.addEventListener("change", function () {
+      selectedData = [];
+      document.querySelectorAll(".row-checkbox").forEach(cb => {
+        cb.checked = this.checked;
+        if (this.checked) {
+          addToSelected(cb);
+        }
+      });
+      updateActionButtons();
+    });
+
+    document.querySelectorAll(".row-checkbox").forEach(cb => {
+      cb.addEventListener("change", function () {
+        if (this.checked) {
+          addToSelected(this);
+        } else {
+          // Remove from selectedData
+          const refNo = this.dataset.ref;
+          selectedData = selectedData.filter(item => item.refNo !== refNo);
+        }
+        updateActionButtons();
+
+        // Update Select All checkbox
+        const allChecked = Array.from(document.querySelectorAll(".row-checkbox")).every(c => c.checked);
+        selectAll.checked = allChecked;
+      });
+    });
+  }
+
+  function addToSelected(checkbox) {
+    const refNo = checkbox.dataset.ref;
+    const isOriginal = checkbox.dataset.original === "true";
+    const rawJsonStr = checkbox.closest("tr").dataset.rawJson;
+
+    selectedData.push({
+      refNo: refNo,
+      isOriginal: isOriginal,
+      rawJson: rawJsonStr ? JSON.parse(rawJsonStr) : {}
+    });
+  }
+
+  function updateActionButtons() {
+    actionButtons.style.display = selectedData.length > 0 ? "flex" : "none";
+  }// Initialize
+  
+  
 
 
-  /* INIT */
+
+
+// ==================== GENERATE DOCX (with full raw_json) ====================
+  document.getElementById("generateDocxBtn").addEventListener("click", async () => {
+    if (selectedData.length === 0) return;
+
+    const payload = {};
+
+    selectedData.forEach(item => {
+      const key = item.refNo + (item.isOriginal ? "-ORI" : "-FNL");
+      payload[key] = item.rawJson;        // <-- Sending full raw_json
+    });
+
+    try {
+      const res = await fetch(`${API_BASE}/v1/cipl/pdf-preview`, {
+        method: "POST",
+        headers: { ...headers, "accept": "application/zip" },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+      const zipBlob = await res.blob();
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `CIPLs_Documents_${new Date().toISOString().slice(0,10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+    } catch (err) {
+      console.error(err);
+      alert("Error generating DOCX: " + err.message);
+    }
+  });
+
+  // ==================== GENERATE TALLY (with full raw_json) ====================
+  document.getElementById("generateTallyBtn").addEventListener("click", async () => {
+    if (selectedData.length === 0) return;
+
+    const payload = {};
+
+    selectedData.forEach(item => {
+      const key = item.refNo + (item.isOriginal ? "-ORI" : "-FNL");
+      payload[key] = item.rawJson;        // <-- Sending full raw_json
+    });
+
+
+    try {
+      const res = await fetch(`${API_BASE}/v1/tally-sheet/generate/data`, {
+        method: "POST",
+        headers: { 
+          ...headers,
+          "accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+      const excelBlob = await res.blob();
+      const url = URL.createObjectURL(excelBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Tally_Report_${new Date().toISOString().slice(0,10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+    } catch (err) {
+      console.error(err);
+      alert("Error generating Tally: " + err.message);
+    }
+  });
+
   loadCipl();
 </script>
-
 
 <script>
   
@@ -695,7 +842,7 @@ async function previewCipl1(refNo, isOriginal, JsonData = null) {
     modal.show();
 
     try {
-        const payloadKey = refNo + (isOriginal ? "-ORI" : "-FIN");
+        const payloadKey = refNo + (isOriginal ? "-ORI" : "-FNL");
         currentRefNo = payloadKey
         const payload = { [payloadKey]: JsonData || {} };
 
@@ -813,7 +960,7 @@ async function previewCipl(refNo, isOriginal, JsonData = null) {
     modal.show();
 
     try {
-        const key = refNo + (isOriginal ? "-ORI" : "-FIN");
+        const key = refNo + (isOriginal ? "-ORI" : "-FNL");
         currentRefNo = key
         const payload = { [key]: JsonData || {} };
 
@@ -866,7 +1013,7 @@ async function previewCipl(refNo, isOriginal, JsonData = null) {
 
             // Store for download
             window.tempPdfBlob = correctPdfBlob;
-            window.tempPdfName = refNo + (isOriginal ? "-ORI" : "-FIN") + ".pdf";
+            window.tempPdfName = refNo + (isOriginal ? "-ORI" : "-FNL") + ".pdf";
         } else {
             pdfError.textContent = "No PDF (.pdf) found in the archive";
             pdfError.classList.remove("d-none");
@@ -883,7 +1030,7 @@ async function previewCipl(refNo, isOriginal, JsonData = null) {
             dlDocxBtn.disabled = false;
 
             window.tempDocxBlob = correctDocxBlob;
-            window.tempDocxName = refNo + (isOriginal ? "-ORI" : "-FIN") + ".docx";
+            window.tempDocxName = refNo + (isOriginal ? "-ORI" : "-FNL") + ".docx";
         }
 
         dlZipBtn.disabled = false;
