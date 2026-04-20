@@ -48,6 +48,9 @@
     <button class="btn btn-primary" id="generateTallyBtn">
       <i class="bi bi-file-earmark-excel me-1"></i> Generate Tally
     </button>
+    <button class="btn btn-primary" id="generateThaiBtn">
+      <i class="bi bi-file-earmark-excel me-1"></i> Generate Thai Sheet
+    </button>
   </div>
 </div>
 
@@ -495,6 +498,47 @@
       const a = document.createElement("a");
       a.href = url;
       a.download = `Tally_Report_${new Date().toISOString().slice(0,10)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+    } catch (err) {
+      console.error(err);
+      alert("Error generating Tally: " + err.message);
+    }
+  });
+
+
+  // ==================== GENERATE TALLY (with full raw_json) ====================
+  document.getElementById("generateThaiBtn").addEventListener("click", async () => {
+    if (selectedData.length === 0) return;
+
+    const payload = {};
+
+    selectedData.forEach(item => {
+      const key = item.refNo + (item.isOriginal ? "-ORI" : "-FNL");
+      payload[key] = item.rawJson;        // <-- Sending full raw_json
+    });
+
+
+    try {
+      const res = await fetch(`${API_BASE}/v1/thai/generate/sheet`, {
+        method: "POST",
+        headers: { 
+          ...headers,
+          "accept": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+      const excelBlob = await res.blob();
+      const url = URL.createObjectURL(excelBlob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Thai_document_sheet_${new Date().toISOString().slice(0,10)}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

@@ -154,7 +154,7 @@ app.add_middleware(AuthMiddleware)
 async def allow_iframe(request: Request, call_next):
     response = await call_next(request)
     response.headers["Content-Security-Policy"] = (
-        "frame-ancestors https://payable.pixxa.tech:8080/ http://localhost:8000" 
+        "frame-ancestors https://payable.pixxa.tech:8080/ http://localhost:8000 https://qxmg9hcp-8000.inc1.devtunnels.ms/ https://qxmg9hcp-8000.inc1.devtunnels.ms/v1/cipl/pdf-docx" 
     )
     return response
 
