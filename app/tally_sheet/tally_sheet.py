@@ -102,10 +102,10 @@ def tally_sheet_p(writer, df1: pd.DataFrame):
     })
 
     # Column widths
-    worksheet.set_column('A:A', 9, text_format)
-    worksheet.set_column('B:B', 49, wrap_format)
-    worksheet.set_column('C:C', 44, wrap_center_format)
-    worksheet.set_column('D:F', 14, num_format)
+    worksheet.set_column('A:A', 19, text_format)
+    worksheet.set_column('B:B', 60, wrap_format)
+    worksheet.set_column('C:C', 55, wrap_center_format)
+    worksheet.set_column('D:F', 19, num_format)
 
     # Bold last row
     last_row = len(df1)
@@ -136,14 +136,14 @@ def tally_sheet_f(writer, df):
     bold_format = workbook.add_format({'bold': True, 'align': 'center', 'border': 1, 'valign': 'vcenter'})
 
     # Column widths — adjust according to your full columns
-    worksheet.set_column('A:A', 9, text_format)
+    worksheet.set_column('A:A', 15, text_format)
     worksheet.set_column('B:B', 49, wrap_format)
     worksheet.set_column('C:C', 44, wrap_center_format)
-    worksheet.set_column('D:D', 10, num_format)
-    worksheet.set_column('E:E', 12, num_format)
-    worksheet.set_column('F:F', 10, num_format)
-    worksheet.set_column('G:G', 11, num_format)
-    worksheet.set_column('H:H', 11, num_format)
+    worksheet.set_column('D:D', 13, num_format)
+    worksheet.set_column('E:E', 16, num_format)
+    worksheet.set_column('F:F', 14, num_format)
+    worksheet.set_column('G:G', 15, num_format)
+    worksheet.set_column('H:H', 15, num_format)
 
     # !!! IMPORTANT: you need df here — pass it or make it global (not recommended)
     # For now assuming it's accessible — better to pass it as argument
@@ -189,7 +189,7 @@ def get_tally_using_db_data(data):
             if len(value['packing_details']['shipping']) ==1:
                 shipping = value['packing_details']['shipping'][0]
                 if value['labels']['CONT NO :'] != "TBA" or value['labels']['SEAL NO :'] != "TBA":
-                    shipping = f"{value['labels']['CONT NO :']}/{value['labels']['SEAL NO :']}\n{value['labels']['REF NO :']} - {value['labels']['CONT NO :']} / 40'OT"
+                    shipping = f"{value['labels']['CONT NO :']}/{value['labels']['SEAL NO :']}\n REF: {value['labels']['REF NO :']} - {value['labels']['CONT NO :']} / 40'OT"
         
         dic = {'REF NO': value['reference_no'] if value['reference_no'] else '', 
             'PACKING DETAILS': '\n'.join(value['packing_details']['details']) if value['packing_details']['details'] else '',
