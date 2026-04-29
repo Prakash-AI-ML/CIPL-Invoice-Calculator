@@ -68,7 +68,12 @@ def get_tally_data(original, final):
         'ORIGINAL $': f"{total_amount_o:,.2f}",
         'FINAL $': f"{total_amount_f:,.2f}"
     }
+
+    df1["ORIGINAL $"] = df1["ORIGINAL $"].apply(fmt)
+    df1["FINAL $"] = df1["FINAL $"].apply(fmt)
+
     df = pd.concat([df1, pd.DataFrame([total_row])], ignore_index=True)
+
     df = df.rename(columns={
     'TOTAL PACKAGES': 'TOTAL\nPACKAGES',
     'GROSS WEIGHT (kgs)': 'GROSS\nWEIGHT (kgs)',
@@ -76,7 +81,10 @@ def get_tally_data(original, final):
 })
     return df
 
-
+def fmt(x):
+    if type(x) == str:
+        x = float(x.replace(',', ''))
+    return f"{x:,.2f}" if pd.notnull(x) else ""
 
 def tally_sheet_p(writer, df1: pd.DataFrame):
     workbook = writer.book
