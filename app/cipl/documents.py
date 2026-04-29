@@ -345,6 +345,8 @@ def add_packing_details(doc, col_widths, packing_details, indent):
 
     # Add each detail
     for d in packing_details["details"]:
+        if 'pallet' in d and d.count('/') ==2:
+            d = d.replace(' / ', '/')
         run = p.add_run(d + "\n")
         run.font.name = "Arial"
         run.font.size = Pt(9)
