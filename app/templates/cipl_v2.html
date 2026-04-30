@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CIPL Document Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #1f4037, #99f2c8);
+            min-height: 100vh;
+        }
+        .card-custom {
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .preview-container {
+            height: 620px;
+            overflow: hidden;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+        }
+        .preview-container embed {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .file-list {
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .file-item {
+            cursor: pointer;
+        }
+        .file-item.active {
+            background: #e6f3ff;
+            font-weight: bold;
+        }
+        .status-log {
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="row">
+
+        <!-- LEFT SIDE: Input Container -->
+        <div class="col-lg-5">
+            <div class="card card-custom p-4 h-100">
+                <h3 class="text-center mb-4">📄 CIPL Document Generator</h3>
+                <ul class="nav nav-tabs mb-4" id="ciplTabs" role="tablist">
+                    
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="pdf-tab" data-bs-toggle="tab" data-bs-target="#pdf" type="button" role="tab" aria-controls="pdf" aria-selected="true">
+                            PDF Input
+                        </button>
+                    </li>
+                    <!-- <li class="nav-item" role="presentation">
+                        <button class="nav-link hide" id="excel-tab" data-bs-toggle="tab" data-bs-target="#excel" type="button" role="tab" aria-controls="excel" aria-selected="false">
+                            Excel Input
+                        </button>
+                    </li> -->
+                </ul>
+               
+
+                <form id="pdfForm">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Upload CI and PL files</label>
+                        <input type="file" class="form-control" id="fileInput" accept=".pdf" multiple required>
+                        
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">JOB NO</label>
+                            <input type="text" class="form-control" id="pdfJobNumber">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">VESSEL</label>
+                            <input type="text" class="form-control" id="vessel">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">VOYAGE</label>
+                            <input type="text" class="form-control" id="voyage">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">TRUCK TYPE</label>
+                            <input type="text" class="form-control" id="truckType">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">BL NO</label>
+                            <input type="text" class="form-control" id="blNo">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">DIVIDED BY</label>
+                            <input type="number" step="any" class="form-control" id="pdfDividedBy">
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" id="generateBtn" class="btn btn-primary btn-lg">
+                            Generate Documents
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Processing Status -->
+                <div id="processingStatus" class="mt-4 p-3 bg-light rounded status-log" style="display: none; min-height: 120px;">
+                    <strong>Processing...</strong><br>
+                    <span id="statusText"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SIDE: Result Container -->
+        <div class="col-lg-7">
+            <div class="card card-custom p-4 h-100">
+                <h4 class="mb-3">Generated Results</h4>
+
+                <!-- <div id="loader" class="text-center py-5" style="display: none;">
+                    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                    <p id="loaderText" class="fw-semibold">Starting generation...</p>
+                </div> -->
+
+                <div id="loader" class="text-center py-5" style="display: none;">
+                    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                    <p id="loaderText" class="fw-semibold mb-1">Starting generation...</p>
+                    <p id="loaderSubText" class="text-muted small"></p>
+                </div>
+
+                <div id="resultSection" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <h5 class="mb-0">Preview (PDF)</h5>
+                        <div class="btn-group btn-group-sm">
+                            <button id="prevBtn" class="btn btn-outline-secondary">← Prev</button>
+                            <button id="nextBtn" class="btn btn-outline-secondary">Next →</button>
+                        </div>
+                    </div>
+
+                    <div class="preview-container mb-3" id="previewContainer"></div>
+
+                    <div class="mb-4">
+                        <h6>Generated Files:</h6>
+                        <div class="list-group file-list" id="fileList"></div>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button id="downloadCurrentPdfBtn" class="btn btn-success">⬇ Current PDF</button>
+                        <button id="downloadCurrentDocxBtn" class="btn btn-primary">⬇ Current DOCX</button>
+                        <button id="downloadCurrentBothBtn" class="btn btn-info">⬇ Current Both (ZIP)</button>
+                        <button id="saveCurrentBtn" class="btn btn-outline-success">💾 Save Current</button>
+                        <button id="downloadAllBtn" class="btn btn-warning">⬇ Download All (ZIP)</button>
+                        <button id="saveAllBtn" class="btn btn-outline-primary">💾 Save All</button>
+                    </div>
+                </div>
+
+                <div id="noResult" class="text-center py-5 text-muted">
+                    <p>Upload files and click Generate to see results here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+<script>
+// ────────────────────────────────────────────────
+// Shared state
+// ────────────────────────────────────────────────
+let zipBlob = null;
+let filesData = [];
+let currentIndex = 0;
+
+
+const loader = document.getElementById('loader');
+const resultSection = document.getElementById('resultSection');
+const previewContainer = document.getElementById('previewContainer');
+const fileListEl = document.getElementById('fileList');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const downloadCurrentPdfBtn   = document.getElementById('downloadCurrentPdfBtn');
+const downloadCurrentDocxBtn  = document.getElementById('downloadCurrentDocxBtn');
+const downloadCurrentBothBtn  = document.getElementById('downloadCurrentBothBtn');
+const downloadAllBtn          = document.getElementById('downloadAllBtn');
+
+function revokeAllUrls() {
+    filesData.forEach(f => {
+        if (f.pdfUrl) URL.revokeObjectURL(f.pdfUrl);
+        if (f.docxUrl) URL.revokeObjectURL(f.docxUrl);
+    });
+    filesData = [];
+    currentIndex = 0;
+}
+
+function updatePreview() {
+    if (filesData.length === 0) return;
+    const file = filesData[currentIndex];
+    previewContainer.innerHTML = file.pdfUrl
+        ? `<embed src="${file.pdfUrl}" type="application/pdf">`
+        : `<div class="alert alert-warning m-3">No PDF preview available</div>`;
+
+    document.querySelectorAll('.file-item').forEach((el, i) => {
+        el.classList.toggle('active', i === currentIndex);
+    });
+
+    prevBtn.disabled = currentIndex === 0;
+    nextBtn.disabled = currentIndex === filesData.length - 1;
+}
+
+function createFileList() {
+    fileListEl.innerHTML = '';
+    filesData.forEach((file, index) => {
+        const item = document.createElement('a');
+        item.className = 'list-group-item list-group-item-action file-item';
+        item.textContent = file.name || `Document ${index + 1}`;
+        item.onclick = () => {
+            currentIndex = index;
+            updatePreview();
+        };
+        fileListEl.appendChild(item);
+    });
+}
+
+async function processForm(formId, endpoint, acceptTypes) {
+    const form = document.getElementById(formId);
+    const fileInput = form.querySelector('input[type="file"]');
+    const files = fileInput.files;
+
+    if (files.length === 0) {
+        alert(`Please select at least one file (${acceptTypes})`);
+        return;
+    }
+
+    const jobNumber = document.getElementById("pdfJobNumber").value.trim();
+    const vessel    = document.getElementById("vessel").value.trim();
+    const voyage    = document.getElementById("voyage").value.trim();
+    const truckType = document.getElementById("truckType").value.trim();
+    const blNo      = document.getElementById("blNo").value.trim();
+    const dividedBy = document.getElementById("pdfDividedBy").value.trim();
+
+    loader.style.display = 'block';
+    resultSection.style.display = 'none';
+    previewContainer.innerHTML = '';
+    revokeAllUrls();
+
+    const formData = new FormData();
+    Array.from(files).forEach((file, i) => formData.append(`file${i+1}`, file));
+
+    const token = localStorage.getItem("token") || getCookie("access_token") || "";
+
+    try {
+        // ==================== PROGRESSIVE STATUS ====================
+        const loaderText = document.getElementById('loaderText');
+        const loaderSubText = document.getElementById('loaderSubText');
+
+        loaderText.textContent = "Extracting data from CI and PL files...";
+        loaderSubText.textContent = `Processing ${files.length} file(s)`;
+
+        // Simulate first phase (Extraction) - 3 seconds
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Second phase: Generating DOCX
+        loaderText.textContent = "Generating CIPL DOCX files using extracted data...";
+        loaderSubText.textContent = `Creating ${Math.floor(files.length / 2)} Word documents`;
+
+        await new Promise(resolve => setTimeout(resolve, 3000));
+
+        // Third phase: Generating PDF
+        loaderText.textContent = "Generating CIPL PDF files...";
+        loaderSubText.textContent = `Converting ${Math.floor(files.length / 2)} documents to PDF`;
+        
+        const headers = { "Authorization": `Bearer ${token}` };
+        if (dividedBy) headers["divided_by"] = dividedBy;
+
+
+        // Now make the actual API call (this will take the remaining time)
+        const res = await fetch(`${API_BASE}${endpoint}`, {
+            method: "POST",
+            headers,
+            body: formData
+        });
+
+        if (!res.ok) {
+            let err = await res.text();
+            throw new Error(`Server error ${res.status}: ${err}`);
+        }
+
+        // Finalizing message
+        loaderText.textContent = "Finalizing documents and preparing preview...";
+        loaderSubText.textContent = "";
+
+        zipBlob = await res.blob();
+        const zip = await JSZip.loadAsync(zipBlob);
+
+        // ... [Rest of your existing code for parsing ZIP, building filesData, etc.] ...
+
+        // Keep the rest of your ZIP processing code here (resultJson, fileMap, etc.)
+        let resultJson = null;
+        const resultJsonFile = zip.file("results.json") || zip.file("results.JSON");
+
+        if (resultJsonFile) {
+            const jsonText = await resultJsonFile.async("string");
+            resultJson = JSON.parse(jsonText);
+            window.resultJson = resultJson;
+            window.dividedByValue = dividedBy ? parseFloat(dividedBy) : null;
+            window.jobNumberValue = jobNumber;
+        }
+
+        const allNames = Object.keys(zip.files);
+        const pdfNames = allNames.filter(n => n.toLowerCase().endsWith('.pdf'));
+        const docxNames = allNames.filter(n => n.toLowerCase().endsWith('.docx'));
+
+        filesData = [];
+
+        const fileMap = {};
+
+        // Helper → get only filename
+        function getFileName(path) {
+            return path.split('/').pop();
+        }
+
+        // Helper → remove extension
+        function getBaseName(filename) {
+            return filename.replace(/\.(pdf|docx)$/i, '');
+        }
+
+        
+        allNames.forEach(path => {
+        const lower = path.toLowerCase();
+
+        // 🚫 Ignore non-doc files (like result.json)
+        if (!lower.endsWith('.pdf') && !lower.endsWith('.docx')) {
+            return;
+        }
+
+        const filename = path.split('/').pop();
+        if (!filename) return;
+
+        const base = filename.replace(/\.(pdf|docx)$/i, '');
+
+        if (!fileMap[base]) {
+            fileMap[base] = { name: base };
+        }
+
+        if (lower.endsWith('.pdf')) {
+            fileMap[base].pdfPath = path;
+        }
+
+        if (lower.endsWith('.docx')) {
+            fileMap[base].docxPath = path;
+        }
+    });
+
+        // Step 2: build blobs
+        for (const base in fileMap) {
+            const file = fileMap[base];
+            const entry = { name: base };
+
+            if (file.pdfPath) {
+                const blob = await zip.file(file.pdfPath).async("blob");
+                entry.pdfBlob = new Blob([blob], { type: "application/pdf" });
+                entry.pdfUrl = URL.createObjectURL(entry.pdfBlob);
+            }
+
+            if (file.docxPath) {
+                const blob = await zip.file(file.docxPath).async("blob");
+                entry.docxBlob = new Blob([blob], {
+                    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                });
+                entry.docxUrl = URL.createObjectURL(entry.docxBlob);
+            }
+
+            filesData.push(entry);
+        }
+
+        if (filesData.length === 0) {
+            throw new Error("No PDF files found in the response");
+        }
+
+        currentIndex = 0;
+        createFileList();
+        updatePreview();
+        resultSection.style.display = 'block';
+
+        // Success - Hide loader and show results
+        loader.style.display = 'none';
+        resultSection.style.display = 'block';
+
+    } catch (err) {
+        console.error(err);
+        loaderText.textContent = "Error occurred";
+        loaderSubText.textContent = err.message;
+        loaderSubText.classList.add('text-danger');
+    }
+}
+
+
+async function processForm1(formId, endpoint, acceptTypes) {
+    const form = document.getElementById(formId);
+    const fileInput = form.querySelector('input[type="file"]');
+    const jobNumberInput = document.getElementById("pdfJobNumber").value;
+    const vessel = document.getElementById("vessel").value;
+    const voyage = document.getElementById("voyage").value;
+    const truckType = document.getElementById("truckType").value;
+    const blNo = document.getElementById("blNo").value;
+    const dividedInput = document.getElementById("pdfDividedBy").value;
+
+    const files = fileInput.files;
+    if (files.length === 0) {
+        alert(`Please select at least one file (${acceptTypes})`);
+        return;
+    }
+
+    // const dividedBy = dividedInput.value.trim();
+    const dividedBy = parseFloat(dividedInput.trim());
+    console.log(dividedBy)
+    const jobNumber = jobNumberInput.trim();
+    const token = localStorage.getItem("token") || getCookie("access_token") || "";
+    const headers = { "Authorization": `Bearer ${token}` };
+    if (dividedBy) headers["divided_by"] = dividedBy;
+
+    loader.style.display = 'block';
+    resultSection.style.display = 'none';
+    previewContainer.innerHTML = '';
+    revokeAllUrls();
+
+    const formData = new FormData();
+    Array.from(files).forEach((file, i) => formData.append(`file${i+1}`, file));
+
+    try {
+        const res = await fetch(`${API_BASE}${endpoint}`, {
+            method: "POST",
+            headers,
+            body: formData
+        });
+
+        if (!res.ok) {
+            let err = await res.text();
+            throw new Error(`Server error ${res.status}: ${err}`);
+        }
+
+        zipBlob = await res.blob();
+        const zip = await JSZip.loadAsync(zipBlob);
+        // ── Add this block ────────────────────────────────────────
+        let resultJson = null;
+        const resultJsonFile = zip.file("results.json") || zip.file("results.JSON"); // case insensitive fallback
+
+        if (resultJsonFile) {
+            const jsonText = await resultJsonFile.async("string");
+            try {
+                resultJson = JSON.parse(jsonText);
+                window.resultJson = resultJson;           // ← global access
+                window.dividedByValue = dividedBy || null; // store dividedBy used for this batch
+                window.jobNumberValue = jobNumber || null;
+                
+            } catch (e) {
+                console.warn("Failed to parse results.json", e);
+            }
+        } else {
+            console.warn("result.json not found in ZIP");
+        }
+
+        const allNames = Object.keys(zip.files);
+        const pdfNames = allNames.filter(n => n.toLowerCase().endsWith('.pdf'));
+        const docxNames = allNames.filter(n => n.toLowerCase().endsWith('.docx'));
+
+        filesData = [];
+
+        const fileMap = {};
+
+        // Helper → get only filename
+        function getFileName(path) {
+            return path.split('/').pop();
+        }
+
+        // Helper → remove extension
+        function getBaseName(filename) {
+            return filename.replace(/\.(pdf|docx)$/i, '');
+        }
+
+        
+        allNames.forEach(path => {
+        const lower = path.toLowerCase();
+
+        // 🚫 Ignore non-doc files (like result.json)
+        if (!lower.endsWith('.pdf') && !lower.endsWith('.docx')) {
+            return;
+        }
+
+        const filename = path.split('/').pop();
+        if (!filename) return;
+
+        const base = filename.replace(/\.(pdf|docx)$/i, '');
+
+        if (!fileMap[base]) {
+            fileMap[base] = { name: base };
+        }
+
+        if (lower.endsWith('.pdf')) {
+            fileMap[base].pdfPath = path;
+        }
+
+        if (lower.endsWith('.docx')) {
+            fileMap[base].docxPath = path;
+        }
+    });
+
+        // Step 2: build blobs
+        for (const base in fileMap) {
+            const file = fileMap[base];
+            const entry = { name: base };
+
+            if (file.pdfPath) {
+                const blob = await zip.file(file.pdfPath).async("blob");
+                entry.pdfBlob = new Blob([blob], { type: "application/pdf" });
+                entry.pdfUrl = URL.createObjectURL(entry.pdfBlob);
+            }
+
+            if (file.docxPath) {
+                const blob = await zip.file(file.docxPath).async("blob");
+                entry.docxBlob = new Blob([blob], {
+                    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                });
+                entry.docxUrl = URL.createObjectURL(entry.docxBlob);
+            }
+
+            filesData.push(entry);
+        }
+
+        if (filesData.length === 0) {
+            throw new Error("No PDF files found in the response");
+        }
+
+        currentIndex = 0;
+        createFileList();
+        updatePreview();
+        resultSection.style.display = 'block';
+
+    } catch (err) {
+        console.error(err);
+        previewContainer.innerHTML = `<div class="alert alert-danger m-3">${err.message || "Processing failed"}</div>`;
+        resultSection.style.display = 'block';
+    } finally {
+        loader.style.display = 'none';
+    }
+}
+
+// // ─── Excel form submit ────────────────────────────────
+// document.getElementById('excelForm').addEventListener('submit', async e => {
+//     e.preventDefault();
+//     await processForm('excelForm', '/v1/cipl/docx', '.xls, .xlsx');
+// });
+
+// ─── PDF form submit ──────────────────────────────────
+document.getElementById('pdfForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    await processForm('pdfForm', '/v1/cipl/pdf-docx', '.pdf');
+});
+
+// Navigation & download handlers (same as before)
+prevBtn.onclick = () => { if (currentIndex > 0) { currentIndex--; updatePreview(); }};
+nextBtn.onclick  = () => { if (currentIndex < filesData.length - 1) { currentIndex++; updatePreview(); }};
+
+downloadCurrentPdfBtn.onclick = () => {
+    const f = filesData[currentIndex];
+    if (!f?.pdfUrl) return alert("No PDF available");
+    console.log(f.pdfUrl, f.name)
+    const a = document.createElement('a');
+    a.href = f.pdfUrl;
+    a.download = `${f.name}.pdf`;
+    a.click();
+};
+
+downloadCurrentDocxBtn.onclick = () => {
+    const f = filesData[currentIndex];
+    if (!f?.docxUrl) return alert("No DOCX available");
+    const a = document.createElement('a');
+    a.href = f.docxUrl;
+    a.download = `${f.name}.docx`;
+    a.click();
+};
+
+downloadCurrentBothBtn.onclick = async () => {
+    const f = filesData[currentIndex];
+    if (!f?.pdfBlob) return alert("No PDF available");
+
+    const miniZip = new JSZip();
+    miniZip.file(`${f.name}.pdf`, f.pdfBlob);
+    let hasDocx = false;
+
+    if (f.docxBlob) {
+        miniZip.file(`${f.name}.docx`, f.docxBlob);
+        hasDocx = true;
+    }
+
+    if (!hasDocx) {
+        alert("No DOCX available — only PDF will be included.");
+    }
+
+    try {
+        const content = await miniZip.generateAsync({type: "blob"});
+        const url = URL.createObjectURL(content);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${f.name}_both.zip`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+        alert("Failed to create ZIP");
+    }
+};
+
+downloadAllBtn.addEventListener('click', () => {
+    if (!zipBlob) return alert("No files available");
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(zipBlob);
+    a.download = "cipl_documents.zip";
+    a.click();
+});
+
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';')?.shift() ?? null;
+    return null;
+}
+</script>
+
+
+
+
+<script>
+// ────────────────────────────────────────────────
+// Updated Save Functionality with cipl_ori & cipl_fnl
+// ────────────────────────────────────────────────
+
+const saveCurrentBtn = document.getElementById('saveCurrentBtn');
+const saveAllBtn      = document.getElementById('saveAllBtn');
+
+
+function getToken() {
+    return localStorage.getItem("token") || getCookie("access_token") || "";
+}
+
+// ==================== PREPARE CIPL LIST PAYLOAD ====================
+function prepareCiplListPayload(jobNumber, vessel, voyage, truckType, blNo, dividedBy, groupNumber) {
+    let cipl_ori = null;
+    let cipl_fnl = null;
+
+    const keys = Object.keys(window.resultJson || {});
+
+    if (dividedBy && dividedBy !== "" && parseFloat(dividedBy) > 0) {
+        // Final version (when dividedBy is provided)
+        cipl_fnl = keys.map(key => `${key}-FNL`).join(',');
+    } else {
+        // Original version
+        cipl_ori = keys.map(key => `${key}-ORI`).join(',');
+    }
+
+    return {
+        job_number: jobNumber || null,
+        vessel: vessel || null,
+        voyage: voyage || null,
+        truck_type: truckType || null,
+        bl_no: blNo || null,
+        divided_by: dividedBy ? parseFloat(dividedBy) : null,
+        group_number: groupNumber || null,
+        cipl_ori: cipl_ori,
+        cipl_fnl: cipl_fnl,
+        created_by: getCookie('user_id'),      // TODO: Replace with actual logged-in user ID
+        updated_by: getCookie('user_id')
+    };
+}
+
+// ==================== PREPARE INVOICE PAYLOAD ====================
+function prepareInvoicePayload(key, value, dividedBy, jobNumber, groupNumber) {
+    const isOriginal = !dividedBy || parseFloat(dividedBy) <= 0;
+
+    return {
+        reference_number: isOriginal ? `${key}-ORI` : `${key}-FNL`,
+        job_number: jobNumber,
+        group_number: groupNumber,
+        jsondata: value,
+        is_original: isOriginal,
+        divided_by: isOriginal ? null : parseFloat(dividedBy),
+        created_by: getCookie('user_id'),      
+        updated_by: getCookie('user_id')
+    };
+}
+
+// ==================== SAVE CIPL LIST ====================
+async function saveCiplList(payload) {
+    const token = getToken();
+    if (!token) {
+        alert("Authentication token not found. Please login again.");
+        return null;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/v1/cipl-list/create`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.status === 409) {
+                const errorData = await res.json();
+                alert(errorData.detail);   // Shows the nice message with DB values
+                return null;
+            }
+
+        if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(`CiplList save failed: ${res.status} - ${errText}`);
+        }
+
+        const data = await res.json();
+        console.log("✅ CiplList saved:", data);
+        return data;   // Should return object with 'id'
+
+    } catch (err) {
+        console.error(err);
+        alert("Failed to save CiplList:\n" + err.message);
+        return null;
+    }
+}
+
+// ==================== SAVE COMMERCIAL INVOICES ====================
+async function saveCommercialInvoices(invoices, ciplListId) {
+    if (!invoices || invoices.length === 0) return;
+
+    const token = getToken();
+    let successCount = 0;
+    let failed = [];
+
+    for (const inv of invoices) {
+        const invoicePayload = {
+            ...inv,
+            cipl_list_id: ciplListId
+        };
+
+        try {
+            const res = await fetch(`${API_BASE}/v1/cipl-list/invoice/create`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(invoicePayload)
+            });
+
+            if (!res.ok) {
+                const errText = await res.text();
+                throw new Error(`Failed for ${inv.reference_number}`);
+            }
+
+            successCount++;
+        } catch (err) {
+            console.error(err);
+            failed.push(inv.reference_number);
+        }
+    }
+
+    if (successCount === invoices.length) {
+        alert(`✅ Successfully saved ${successCount} invoice(s) under CiplList ID: ${ciplListId}`);
+    } else {
+        alert(`⚠️ Saved ${successCount} of ${invoices.length} invoice(s).\nFailed: ${failed.join(", ")}`);
+    }
+}
+
+// ───────────────────── SAVE CURRENT ─────────────────────
+saveCurrentBtn.addEventListener('click', async () => {
+    if (filesData.length === 0 || currentIndex >= filesData.length) {
+        alert("No document selected.");
+        return;
+    }
+
+    if (!window.resultJson) {
+        alert("Invoice data not available. Please generate first.");
+        return;
+    }
+
+    const currentFile = filesData[currentIndex];
+    const refKey = currentFile.name.replace(/^CIPL_?/, '');
+
+    if (!window.resultJson[refKey]) {
+        alert(`Data not found for: ${refKey}`);
+        return;
+    }
+
+    // Get form values
+    const jobNumber = window.jobNumberValue || document.getElementById("pdfJobNumber").value.trim();
+    const vessel    = document.getElementById("vessel").value.trim();
+    const voyage    = document.getElementById("voyage").value.trim();
+    const truckType = document.getElementById("truckType").value.trim();
+    const blNo      = document.getElementById("blNo").value.trim();
+    const dividedBy = window.dividedByValue || document.getElementById("pdfDividedBy").value.trim();
+
+    const groupNumber = Object.keys(window.resultJson).join(',');
+
+    // 1. Save CiplList first
+    const ciplPayload = prepareCiplListPayload(jobNumber, vessel, voyage, truckType, blNo, dividedBy, groupNumber);
+    const ciplResponse = await saveCiplList(ciplPayload);
+
+    if (!ciplResponse?.id) {
+        alert("Failed to create CiplList. Cannot save invoice.");
+        return;
+    }
+
+    // 2. Save only current invoice
+    const invoicePayload = prepareInvoicePayload(
+        refKey,
+        window.resultJson[refKey],
+        dividedBy,
+        jobNumber,
+        groupNumber
+    );
+
+    await saveCommercialInvoices([invoicePayload], ciplResponse.id);
+});
+
+// ───────────────────── SAVE ALL ─────────────────────
+saveAllBtn.addEventListener('click', async () => {
+    if (filesData.length === 0 || !window.resultJson) {
+        alert("No documents or data available to save.");
+        return;
+    }
+
+    const jobNumber = window.jobNumberValue || document.getElementById("pdfJobNumber").value.trim();
+    const vessel    = document.getElementById("vessel").value.trim();
+    const voyage    = document.getElementById("voyage").value.trim();
+    const truckType = document.getElementById("truckType").value.trim();
+    const blNo      = document.getElementById("blNo").value.trim();
+    const dividedBy = window.dividedByValue || document.getElementById("pdfDividedBy").value.trim();
+
+    const groupNumber = Object.keys(window.resultJson).join(',');
+
+    // 1. Save CiplList first (once)
+    const ciplPayload = prepareCiplListPayload(jobNumber, vessel, voyage, truckType, blNo, dividedBy, groupNumber);
+    const ciplResponse = await saveCiplList(ciplPayload);
+
+    if (!ciplResponse?.id) {
+        alert("Failed to create CiplList. Cannot proceed.");
+        return;
+    }
+
+    // 2. Prepare all invoices
+    const invoices = Object.keys(window.resultJson).map(key => {
+        return prepareInvoicePayload(key, window.resultJson[key], dividedBy, jobNumber, groupNumber);
+    });
+
+    // 3. Save all invoices with cipl_list_id
+    await saveCommercialInvoices(invoices, ciplResponse.id);
+});
+</script>
+
+</body>
+</html>
