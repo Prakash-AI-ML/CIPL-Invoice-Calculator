@@ -378,12 +378,31 @@ async def user_list(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+
+@app.get("/app/cipl-v2", response_class=HTMLResponse)
+async def user_list(request: Request):
+    description = "Navigated to Users page from CIPL-v2"
+    await logs(request = request, endpoint='/app/cipl-v2', action= 'cipl', description= description, is_backend= False)
+    logger.info(f"Navigated to Users page from CIPL V2 by user: {request.state.user.get('username', 'unknown')}")
+    return templates.TemplateResponse("index.html", {"request": request})
+
+
 @app.get("/app/invoices", response_class=HTMLResponse)
 async def user_list(request: Request):
     description = "Navigated to Users page from CIPL"
     await logs(request = request, endpoint='/app/cipl', action= 'cipl', description= description, is_backend= False)
     logger.info(f"Navigated to Users page from CIPL by user: {request.state.user.get('username', 'unknown')}")
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+
+@app.get("/app/cipl-list", response_class=HTMLResponse)
+async def user_list(request: Request):
+    description = "Navigated to Users page from cipl-list"
+    await logs(request = request, endpoint='/app/cipl-list', action= 'cipl-list', description= description, is_backend= False)
+    logger.info(f"Navigated to Users page from cipl-list by user: {request.state.user.get('username', 'unknown')}")
+    return templates.TemplateResponse("index.html", {"request": request})
+
 
 
 @app.get("/app/delivery-order", response_class=HTMLResponse)
@@ -400,6 +419,14 @@ async def tally_page(request: Request):
     await logs(request = request, endpoint='/app/tally', action= 'tally', description= description, is_backend= False)
     logger.info(f"Navigated to Users page from tally by user: {request.state.user.get('username', 'unknown')}")
     return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/app/customs-docx", response_class=HTMLResponse)
+async def customs_docx(request: Request):
+    description = "Navigated to Users page from customs-docx"
+    await logs(request = request, endpoint='/app/customs-docx', action= 'customs-docx', description= description, is_backend= False)
+    logger.info(f"Navigated to Users page from customs-docx by user: {request.state.user.get('username', 'unknown')}")
+    return templates.TemplateResponse("index.html", {"request": request})
+
 
 @app.get("/app/settings/users_list", response_class=HTMLResponse)
 async def user_list(request: Request):

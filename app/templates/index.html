@@ -1136,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <li class="nav-item {% if 'cipl' in request.path %}active{% endif %}">
 
             <a class="nav-link" href="#"  onclick="navigate('/app/cipl'); return false;">
-              <i class="typcn typcn-cog menu-icon"></i>
+              <i class="typcn typcn-document-text menu-icon"></i>
               <span class="menu-title">CIPL-DOCX</span>
               
             </a>
@@ -1145,8 +1145,25 @@ document.addEventListener('DOMContentLoaded', function () {
           <li class="nav-item {% if 'list' in request.path %}active{% endif %}">
 
             <a class="nav-link" href="#"  onclick="navigate('/app/invoices'); return false;">
-              <i class="typcn typcn-cog menu-icon"></i>
+              <i class="typcn typcn-printer menu-icon"></i>
               <span class="menu-title">CIPL-LIST</span>
+              
+            </a>
+          </li>
+
+           <li class="nav-item {% if 'cipl_v2' in request.path %}active{% endif %}">
+
+            <a class="nav-link" href="#"  onclick="navigate('/app/cipl-v2'); return false;">
+              <i class="typcn typcn-document-text menu-icon"></i>
+              <span class="menu-title">CIPL-DOCX new</span>
+              
+            </a>
+          </li>
+          <li class="nav-item {% if 'cipl-list' in request.path %}active{% endif %}">
+
+            <a class="nav-link" href="#"  onclick="navigate('/app/cipl-list'); return false;">
+              <i class="typcn typcn-printer menu-icon"></i>
+              <span class="menu-title">CIPL-LIST new</span>
               
             </a>
           </li>
@@ -1154,7 +1171,7 @@ document.addEventListener('DOMContentLoaded', function () {
           <li class="nav-item {% if 'delivery-order' in request.path %}active{% endif %}">
 
             <a class="nav-link" href="#"  onclick="navigate('delivery-order'); return false;">
-              <i class="typcn typcn-cog menu-icon"></i>
+              <i class="typcn typcn-pencil menu-icon"></i>
               <span class="menu-title">DO-DOCX</span>
               
             </a>
@@ -1162,8 +1179,17 @@ document.addEventListener('DOMContentLoaded', function () {
           <li class="nav-item {% if 'tally' in request.path %}active{% endif %}">
 
             <a class="nav-link" href="#"  onclick="navigate('/app/tally'); return false;">
-              <i class="typcn typcn-cog menu-icon"></i>
+              <i class="typcn typcn-news menu-icon"></i>
               <span class="menu-title">TALLY</span>
+              
+            </a>
+          </li>
+
+          <li class="nav-item {% if 'customs-docx' in request.path %}active{% endif %}">
+
+            <a class="nav-link" href="#"  onclick="navigate('/app/customs-docx'); return false;">
+              <i class="typcn typcn-group-outline menu-icon"></i>
+              <span class="menu-title">THAI DOCX</span>
               
             </a>
           </li>
@@ -1200,54 +1226,44 @@ document.addEventListener('DOMContentLoaded', function () {
 
           {% if 'dashboard' in request.path %}
             {% extends "dashboard.html" %}
-          {% endif %}
-          {% if 'v1/dash' in request.path %}
+          {% elif 'v1/dash' in request.path %}
             {% extends "dashboard_v2.html" %}
-          {% endif %}
-          {% if 'invoicesaging' in request.path %}
+          {% elif 'invoicesaging' in request.path %}
             {% extends "invoicesaging.html" %}
-          {% endif %}
-          {% if 'descriptions' in request.path %}
+          {% elif 'descriptions' in request.path %}
             {% extends "cipl_desc.html" %}
-          {% endif %}
-          {% if 'invoices' in request.path %}
+          {% elif 'invoices' in request.path %}
             {% extends "cipl_list.html" %}
-          {% endif %}
-          {% if 'cipl' in request.path %}
+          {% elif 'cipl-list' in request.path %}
+            {% extends "cipl_list_v2.html" %}
+          {% elif 'cipl-v2' in request.path %}
+            {% extends "cipl_v2.html" %}
+          {% elif 'cipl' in request.path %}
             {% extends "cipl.html" %}
-          {% endif %}
-          {% if 'delivery-order' in request.path %}
+          {% elif 'delivery-order' in request.path %}
             {% extends "delivery_order.html" %}
-          {% endif %}
-          {% if 'tally' in request.path %}
+          {% elif 'tally' in request.path %}
             {% extends "tally.html" %}
-          {% endif %}
-          
-           {% if 'profile' in request.path %}
+          {% elif 'customs-docx' in request.path %}
+            {% extends "thai_customs_docx.html" %}
+          {% elif 'profile' in request.path %}
             {% extends "profile.html" %}
-          {% endif %}
-          
-          
-          {% if 'users_list' in request.path %}
+          {% elif 'users_list' in request.path %}
             {% extends "users1.html" %}
-          {% endif %}
-          {% if 'role' in request.path %}
+          {% elif 'role' in request.path %}
             {% extends "role.html" %}
-          {% endif %}
-          {% if 'category' in request.path %}
+          {% elif 'category' in request.path %}
             {% extends "category.html" %}
-          {% endif %}
-          {% if 'clients' in request.path %}
+          {% elif 'clients' in request.path %}
             {% extends "client_manage.html" %}
-          {% endif %}
-          {% if 'menu' in request.path %}
+          {% elif 'menu' in request.path %}
             {% extends "menu.html" %}
-          {% endif %}
-          {% if 'button' in request.path %}
+          {% elif 'button' in request.path %}
             {% extends "button.html" %}
-          {% endif %}
-          {% if  request.path.endswith('settings') %}
+          {% elif request.path.endswith('settings') %}
             {% extends "settings.html" %}
+          {% else %}
+            {% extends "base.html" %}
           {% endif %}
           
        

@@ -4,7 +4,7 @@ from .endpoints import (auth, users, category, admin,  menu_permissions,
                         menus, client_details, button_permissions, buttons,
                         roles, user_management, impersonate, dashboard, cipl,
                         delivery_order, delivery_order_setting, tally_sheet, cipl_desc,
-                        commercial_invoice, thai_sheet
+                        commercial_invoice, thai_sheet, commercial_invoice_v2
                         )
 
 api_router = APIRouter()  # Main V1 router
@@ -31,6 +31,7 @@ api_router.include_router(tally_sheet.router, prefix="/tally-sheet", tags=["Tall
 api_router.include_router(cipl_desc.router, prefix="/cipl-desc", tags=["CIPL Description Settings"])
 api_router.include_router(commercial_invoice.router, prefix="/commercial-invoices", tags=["Commercial Invoices / CIPL"],)
 api_router.include_router(thai_sheet.router, prefix="/thai", tags=["Thai Document Sheet Generator"])
+api_router.include_router(commercial_invoice_v2.router, prefix="/cipl-list", tags=["CIPL LIST"],)
 
 # Export for parent import
 __all__ = ["api_router"]
