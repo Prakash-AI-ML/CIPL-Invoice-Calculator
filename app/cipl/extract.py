@@ -146,7 +146,7 @@ def calculate_cbm(lines):
             
             print(data, cbm_per_item * quantity, total_cbm)
 
-    return round(total_cbm, 2)
+    return f'{total_cbm:,.2f}'
 
 def get_packing_details(df):
     pck = df[df.iloc[:, 2].astype(str).str.contains('Packing Details:', case=False, na=False)].index[0]
@@ -326,6 +326,7 @@ def analysis_cipl(df, df1, DESCRIPTIONS_DATA, divided_by = None):
     shipper, importer_of_record, ship_to, reference_no, reference_date, port_loading, port_discharge, po_no, po_no_date = get_data(df)
     original_pcks, modified_pcks, total_pcks, total_w, gross_w, is_total_weight_verfy = get_packing_details(df)
     cbm = calculate_cbm(original_pcks)
+    print(cbm)
     original_items, total_amount = get_table_items(df1, table = 'invoice', divided_by = divided_by)
     modified_items = copy.deepcopy(original_items)
     total_idx = df1[df1.iloc[:, 6].astype(str).str.contains('total', case=False, na=False)].index[0]

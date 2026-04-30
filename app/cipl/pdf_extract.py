@@ -48,7 +48,7 @@ def calculate_cbm(lines):
             
             print(data, cbm_per_item * quantity, total_cbm)
 
-    return round(total_cbm, 2)
+    return f'{total_cbm:,.2f}'
 
 
 def get_final_recalculate_data(data, divided_by):
