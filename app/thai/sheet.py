@@ -26,6 +26,8 @@ def create_thai_data(data):
             else:
                 final_data.append(dic)
             idx +=1
+    original_data.sort(key=lambda x: x['REF NO'])
+    final_data.sort(key=lambda x: x['REF NO'])
     ref_nos = [item['REF NO'] for item in original_data]
     return insert_elements(original_data), insert_elements(final_data), f'{min(ref_nos)}-{max(ref_nos)}'
 
@@ -53,6 +55,7 @@ def insert_elements(lst):
 
 
 def create_thai_sheet(original, final, excel_file = "THAI_DOC_SHEET.xlsx"):
+
     with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
         original.to_excel(writer, index=False, header=False, startrow=1, sheet_name='ORIGINAL')
         writer = thai_sheet_writer(writer, original, 'ORIGINAL')

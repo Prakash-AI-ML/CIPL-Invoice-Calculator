@@ -138,6 +138,7 @@ async def generate_docx_and_pdf(
             zipf.writestr('results.json', result_json)
 
         zip_buffer.seek(0)
+        
 
         return StreamingResponse(
             zip_buffer,
@@ -216,7 +217,7 @@ async def generate_docx_and_pdf(
             for key, value in cipl_data.items():
 
                 # Prepare clean filenames
-                base_name = f'CIPL_{key}'
+                base_name = f'CIPL_{key}-{'FNL' if divided_by else 'ORI'}'
                 docx_filename = f"{base_name}.docx"
                 pdf_filename  = f"{base_name}.pdf"
                 # ─── Create DOCX in memory ───────────────────────────────────────
@@ -428,7 +429,7 @@ async def download_docx(
         for key, value in cipl_data.items():
 
             # Prepare clean filenames
-            base_name = f'CIPL_{key}'
+            base_name = f'CIPL_{key}-{'FNL' if divided_by else 'ORI'}'
             docx_filename = f"{base_name}.docx"
             # ─── Create DOCX in memory ───────────────────────────────────────
             document = create_documents(data=value, filename=docx_filename)
