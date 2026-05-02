@@ -793,7 +793,7 @@ saveCurrentBtn.addEventListener('click', async () => {
     }
 
     const currentFile = filesData[currentIndex];
-    const refKey = currentFile.name.replace(/^CIPL_?/, '');
+    const refKey = currentFile.name.replace(/^CIPL_?/, '').replace(/-(ORI|FNL)$/, '');
 
     if (!window.resultJson[refKey]) {
         alert(`Data not found for: ${refKey}`);
