@@ -222,8 +222,8 @@ async def generate_tally_sheet(
             doc = await create_thai_document(ori, fnl, dest, index_, verification, fnl_to_ori)
 
             base_name = draft_docx.filename.rsplit(".", 1)[0]
-            docx_filename = f"{base_name}-{'ORI' if verification else 'FNL'}.docx"
-            pdf_filename = f"{base_name}-{'ORI' if verification else 'FNL'}.pdf"
+            docx_filename = f"{base_name}-{'ORI' if fnl_to_ori else 'FNL'}{'-REVIEW' if verification else ''}.docx"
+            pdf_filename = f"{base_name}-{'ORI' if fnl_to_ori else 'FNL'}{'-REVIEW' if verification else ''}.pdf"
 
             # ─── Save DOCX to memory ──────────────────────────
             docx_buffer = BytesIO()
