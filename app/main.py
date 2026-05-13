@@ -25,7 +25,8 @@ from starlette.responses import Response
 import json
 import logging
 from pathlib import Path
-
+import shutil
+import tempfile
 from app.crud.log_manage import logs, frontend_logs
 
 # Async DB init function
@@ -46,6 +47,20 @@ async def trigger_daily_reminder():
         except Exception as e:
             logger.error(f"Failed to trigger daily reminder: {e}")
 
+def cleanup_temp_folders():
+    # Dynamically get system temp directory
+    temp_dir = Path(tempfile.gettempdir())
+    removed = []
+
+    for folder in temp_dir.iterdir():
+        if folder.is_dir() and (folder.name.startswith("tally_") or folder.name.startswith("thai_")):
+            try:
+                shutil.rmtree(folder)
+                removed.append(folder.name)
+            except Exception as e:
+                logger.error(f"Failed to remove {folder}: {e}")
+
+    logger.info(f"Cleanup completed. Removed folders: {removed}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -64,6 +79,19 @@ async def lifespan(app: FastAPI):
             second=0,
             day_of_week='mon-sat',
             id="daily_due_today_reminder",
+            replace_existing=True,
+            coalesce=True,
+            timezone=settings.scheduler_timezone
+        )
+
+        # New cleanup job
+        scheduler.add_job(
+            cleanup_temp_folders,
+            trigger="cron",
+            hour=2,              # runs daily at 2 AM
+            minute=0,
+            second=0,
+            id="cleanup_temp_folders",
             replace_existing=True,
             coalesce=True,
             timezone=settings.scheduler_timezone
