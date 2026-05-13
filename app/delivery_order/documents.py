@@ -488,21 +488,21 @@ def set_footer(doc):
 def get_table_list(data):
     lst = [
             [f"Reference No: {data['ref_no']}", ""],
-            [f"PO NO: {data['po_no']}", f'DATE: {data['date']}'],
+            [f"PO NO: {data['po_no']}", f"DATE: {data['date']}"],
             [],
             ['COLLECTION DETAIL','DELIVERY DETAIL'],
-            [f'Address:\n{data['collection_details']['address']}',
-            f'Address:\n{data['delivery_details']['address']}'],
-            [f'Contact Person: {data['collection_details']['contact_person']}',f'Contact Person: {data['delivery_details']['contact_person']}'],
-            [f'Tel: {data['collection_details']['tel']}',f'Tel: {data['delivery_details']['tel']}'],
-            [f'Collection Date: {data['collection_details']['date']}',f'Delivery Date: {data['delivery_details']['date']}'],
-            [f'Collection Time: {data['collection_details']['time']}',f'Delivery Time: {data['delivery_details']['time']}'],
-            [f'Total Packages:{data['total_packages']}',f'Total Weight: {data['total_weight']} KGS'],
-            [f'Cargo Description: \n{data['cargo_description']}\nRef : {data['cargo_ref']}'],
-            [f'Type of Truck: {data['collection_details']['truck_type']}\nTruck No: {data['collection_details']['truck_number']}\nDriver: {data['collection_details']['driver']}\nDate: {data['collection_details']['date_']}', 
-             f'Name: {data['delivery_details']['name']}\nID No: {data['delivery_details']['id']}\nSignature: {data['delivery_details']['signature']}\nDate: {data['delivery_details']['date_']}'],
+            [f"Address:\n{data['collection_details']['address']}",
+            f"Address:\n{data['delivery_details']['address']}"],
+            [f"Contact Person: {data['collection_details']['contact_person']}",f"Contact Person: {data['delivery_details']['contact_person']}"],
+            [f"Tel: {data['collection_details']['tel']}",f"Tel: {data['delivery_details']['tel']}"],
+            [f"Collection Date: {data['collection_details']['date']}",f"Delivery Date: {data['delivery_details']['date']}"],
+            [f"Collection Time: {data['collection_details']['time']}",f"Delivery Time: {data['delivery_details']['time']}"],
+            [f"Total Packages:{data['total_packages']}",f"Total Weight: {data['total_weight']} KGS"],
+            [f"Cargo Description: \n{data['cargo_description']}\nRef : {data['cargo_ref']}"],
+            [f"Type of Truck: {data['collection_details']['truck_type']}\nTruck No: {data['collection_details']['truck_number']}\nDriver: {data['collection_details']['driver']}\nDate: {data['collection_details']['date_']}", 
+             f"Name: {data['delivery_details']['name']}\nID No: {data['delivery_details']['id']}\nSignature: {data['delivery_details']['signature']}\nDate: {data['delivery_details']['date_']}"],
 
-            [f'Remarks:\n{data['remarks']}']
+            [f"Remarks:\n{data['remarks']}"]
             
 
         ]

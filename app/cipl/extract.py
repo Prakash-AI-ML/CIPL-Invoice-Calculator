@@ -479,7 +479,7 @@ def get_data_to_cipl(data, DESCRIPTIONS_DATA):
                 packing_details = {"details":data['packing_details']['details'],
                                    "total" :{'TOTAL PACKAGES:': data['packing_details']["total"]['TOTAL PACKAGES:'],
                                             "GROSS WEIGHT:" : data['packing_details']["total"]["GROSS WEIGHT:"],
-                                            'TOTAL CBM (m³) :': f'{data['packing_details']["total"]['TOTAL CBM (m³) :']}'
+                                            'TOTAL CBM (m³) :': f"{data['packing_details']['total']['TOTAL CBM (m³) :']}"
                                             },
                                     'shipping': data['packing_details']['shipping']
                                             },

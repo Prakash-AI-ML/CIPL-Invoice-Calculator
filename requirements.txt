@@ -1,31 +1,108 @@
-fastapi
-fastapi_mail
-uvicorn[standard]
-sqlalchemy[asyncio]
-pydantic
-pydantic-settings
-python-jose[cryptography]==3.3.0
-passlib==1.7.4
-bcrypt==4.0.1
-python-dotenv
-jinja2
-aiomysql
-python-multipart
-pandas==2.2.2
-openpyxl==3.1.2
-python-dotenv==1.0.0
+# fastapi
+# fastapi_mail
+# uvicorn[standard]
+# sqlalchemy[asyncio]
+# pydantic
+# pydantic-settings
+# python-jose[cryptography]==3.3.0
+# passlib==1.7.4
+# bcrypt==4.0.1
+# python-dotenv
+# jinja2
+# aiomysql
+# python-multipart
+# pandas==2.2.2
+# openpyxl==3.1.2
+# python-dotenv==1.0.0
+# aiomysql==0.2.0
+# gunicorn
+# pydantic[email]
+# user-agents
+# httpx
+# apscheduler
+# python-docx
+# requests
+# PyMuPDF
+# pillow
+# xlrd
+# docx2pdf
+# spire-doc
+# xlsxwriter
+# pdfplumber
+
 aiomysql==0.2.0
-gunicorn
-pydantic[email]
-user-agents
-httpx
-apscheduler
-python-docx
-requests
-PyMuPDF
-pillow
-xlrd
-docx2pdf
-spire-doc
-xlsxwriter
-pdfplumber
+aiosmtplib==5.1.0
+annotated-doc==0.0.4
+annotated-types==0.7.0
+anyio==4.12.1
+APScheduler==3.11.2
+bcrypt==4.0.1
+blinker==1.9.0
+certifi==2026.1.4
+cffi==2.0.0
+charset-normalizer==3.4.4
+click==8.3.1
+colorama==0.4.6
+cryptography==46.0.5
+dnspython==2.8.0
+docx2pdf==0.1.8
+ecdsa==0.19.1
+email-validator==2.3.0
+et_xmlfile==2.0.0
+fastapi==0.129.0
+fastapi-mail==1.6.2
+greenlet==3.3.1
+gunicorn==25.1.0
+h11==0.16.0
+httpcore==1.0.9
+httptools==0.7.1
+httpx==0.28.1
+idna==3.11
+Jinja2==3.1.6
+lxml==6.0.2
+MarkupSafe==3.0.3
+numpy==2.2.6
+openpyxl==3.1.2
+packaging==26.0
+pandas==2.2.2
+passlib==1.7.4
+pdfminer.six==20251230
+pdfplumber==0.11.9
+pillow==12.1.1
+plum-dispatch==1.7.4
+pyasn1==0.6.2
+pycparser==3.0
+pydantic==2.12.5
+pydantic_core==2.41.5
+pydantic-settings==2.13.1
+PyMuPDF==1.27.1
+PyMySQL==1.1.2
+pypdfium2==5.6.0
+python-dateutil==2.9.0.post0
+python-docx==1.2.0
+python-dotenv==1.0.0
+python-jose==3.3.0
+python-multipart==0.0.22
+pytz==2025.2
+PyYAML==6.0.3
+regex==2025.11.3
+requests==2.32.5
+rsa==4.9.1
+six==1.17.0
+spire-doc==14.1.6
+SQLAlchemy==2.0.46
+starlette==0.52.1
+tqdm==4.67.3
+typing_extensions==4.15.0
+typing-inspection==0.4.2
+tzdata==2025.3
+tzlocal==5.3.1
+ua-parser==1.0.1
+ua-parser-builtins==202602
+urllib3==2.6.3
+user-agents==2.2.0
+uvicorn==0.41.0
+watchfiles==1.1.1
+websockets==16.0
+xlrd==2.0.2
+xlsxwriter==3.2.9
