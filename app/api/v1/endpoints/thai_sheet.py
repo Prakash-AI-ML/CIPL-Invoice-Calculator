@@ -21,12 +21,37 @@ import traceback
 import tempfile
 import io, uuid, zipfile, logging
 from docx2pdf import convert
-
+import subprocess
+from pathlib import Path
+import platform
 # ─── FastAPI app ────────────────────────────────────────
 
 router = APIRouter() 
 
 
+os_name = platform.system()
+
+def convert_docx_to_pdf(docx_path: str, output_dir: str):
+    subprocess.run([
+        "libreoffice",
+        "--headless",
+        "--convert-to",
+        "pdf",
+        docx_path,
+        "--outdir",
+        output_dir
+    ], check=True)
+
+    pdf_path = Path(output_dir) / (Path(docx_path).stem + ".pdf")
+    return str(pdf_path)
+
+def convert_docs_pdf(docx_temp_path, pdf_temp_path):
+    if os_name == "Windows":
+        print("Running on Windows")
+        convert(docx_temp_path, pdf_temp_path)
+    elif os_name == "Linux":
+        print("Running on Linux")
+        convert_docx_to_pdf(docx_temp_path, pdf_temp_path)
 
 @router.post("/generate/sheet")
 async def generate_thai_sheet(
@@ -238,7 +263,7 @@ async def generate_tally_sheet(
                 with open(docx_path, "wb") as f:
                     f.write(docx_buffer.getvalue())
 
-                convert(docx_path, pdf_path)
+                convert_docs_pdf(docx_path, pdf_path)
 
                 with open(pdf_path, "rb") as f:
                     pdf_bytes = f.read()

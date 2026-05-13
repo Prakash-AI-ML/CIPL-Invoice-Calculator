@@ -22,18 +22,42 @@ from app.crud.log_manage import backend_logs
 import os
 import io, uuid, zipfile, logging
 from docx2pdf import convert
+import platform
 from app.cipl.pdf_extract import analysis_pdf_cipl, create_cipl_data
 import pdfplumber
 from app.crud.cipl_desc import get_cipl_descs
 import tempfile
-
+import subprocess
+from pathlib import Path
 
 # Setup logger for this module
 logger = logging.getLogger(__name__)
 
 router = APIRouter() 
 
+os_name = platform.system()
 
+def convert_docx_to_pdf(docx_path: str, output_dir: str):
+    subprocess.run([
+        "libreoffice",
+        "--headless",
+        "--convert-to",
+        "pdf",
+        docx_path,
+        "--outdir",
+        output_dir
+    ], check=True)
+
+    pdf_path = Path(output_dir) / (Path(docx_path).stem + ".pdf")
+    return str(pdf_path)
+
+def convert_docs_pdf(docx_temp_path, pdf_temp_path):
+    if os_name == "Windows":
+        print("Running on Windows")
+        convert(docx_temp_path, pdf_temp_path)
+    elif os_name == "Linux":
+        print("Running on Linux")
+        convert_docx_to_pdf(docx_temp_path, pdf_temp_path)
 
 
 @router.post("/docx")
@@ -116,7 +140,7 @@ async def generate_docx_and_pdf(
                         f.write(docx_buffer.getvalue())
 
                     # Perform conversion (input_path → output_path)
-                    convert(docx_temp_path, pdf_temp_path)
+                    convert_docs_pdf(docx_temp_path, pdf_temp_path)
 
                     # Read generated PDF back to memory
                     with open(pdf_temp_path, "rb") as f:
@@ -237,7 +261,7 @@ async def generate_docx_and_pdf(
                         f.write(docx_buffer.getvalue())
 
                     # Perform conversion (input_path → output_path)
-                    convert(docx_temp_path, pdf_temp_path)
+                    convert_docs_pdf(docx_temp_path, pdf_temp_path)
 
                     # Read generated PDF back to memory
                     with open(pdf_temp_path, "rb") as f:
@@ -331,7 +355,7 @@ async def generate_docx_and_pdf(
                         f.write(docx_buffer.getvalue())
 
                     # Perform conversion (input_path → output_path)
-                    convert(docx_temp_path, pdf_temp_path)
+                    convert_docs_pdf(docx_temp_path, pdf_temp_path)
 
                     # Read generated PDF back to memory
                     with open(pdf_temp_path, "rb") as f:
