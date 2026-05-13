@@ -372,7 +372,7 @@ tfoot{
             // If ROOT_PATH is empty, "/" or undefined, set to empty string
             if (!rootPathCookie || rootPathCookie === '/' || rootPathCookie === '' || rootPathCookie === '""') {
                 ROOT_PATH = "";
-                API_BASE = "http://localhost:8000";
+                API_BASE = "http://localhost:8005";
             } else {
                 // Production mode with proxy (e.g., /soa)
                 ROOT_PATH = rootPathCookie;
