@@ -47,7 +47,7 @@
     <!-- Clients -->
     {% set settings_buttons = request.state.user.menus['settings']['buttons'] %}
     {% if 'clients_view' in settings_buttons | map(attribute='button_name') | list %}
-    <div class="col-md-3 col-sm-6">
+    <div class="col-md-3 col-sm-6 hide">
       <a  href="#" onclick="navigate('/app/settings/clients'); return false;" class="text-decoration-none">
         <div class="card text-center shadow-sm" style="padding: 10px;">
           <div class="card-body"  style="padding: 10px;">
@@ -62,7 +62,7 @@
     <!-- Category -->
     {% set settings_buttons = request.state.user.menus['settings']['buttons'] %}
     {% if 'categories_view' in settings_buttons | map(attribute='button_name') | list %}
-    <div class="col-md-3 col-sm-6">
+    <div class="col-md-3 col-sm-6 hide">
       <a  href="#" onclick="navigate('/app/settings/category'); return false;" class="text-decoration-none">
         <div class="card text-center shadow-sm" style="padding: 10px;">
           <div class="card-body"  style="padding: 10px;">
@@ -81,7 +81,7 @@
         <div class="card text-center shadow-sm" style="padding: 10px;">
           <div class="card-body"  style="padding: 10px;">
             <i class="dripicons-document" style="font-size: 40px;color: #844fc1;"></i>
-            <h5 class="card-title mt-2" style="font-size: 20px;color: #844fc1;">CIPL DESCRIPTION</h5>
+            <h5 class="card-title mt-2" style="font-size: 20px;color: #844fc1;">CIPL Description</h5>
           </div>
         </div>
       </a>

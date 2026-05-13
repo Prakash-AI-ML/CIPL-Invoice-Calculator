@@ -1133,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', function () {
           </li>
 
             
-            <li class="nav-item {% if 'cipl' in request.path %}active{% endif %}">
+            <li class="nav-item {% if 'cipl' in request.path %}active{% endif %} hide">
 
             <a class="nav-link" href="#"  onclick="navigate('/app/cipl'); return false;">
               <i class="typcn typcn-document-text menu-icon"></i>
@@ -1142,7 +1142,7 @@ document.addEventListener('DOMContentLoaded', function () {
             </a>
           </li>
 
-          <li class="nav-item {% if 'list' in request.path %}active{% endif %}">
+          <li class="nav-item {% if 'list' in request.path %}active{% endif %} hide">
 
             <a class="nav-link" href="#"  onclick="navigate('/app/invoices'); return false;">
               <i class="typcn typcn-printer menu-icon"></i>
@@ -1155,7 +1155,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             <a class="nav-link" href="#"  onclick="navigate('/app/cipl-v2'); return false;">
               <i class="typcn typcn-document-text menu-icon"></i>
-              <span class="menu-title">CIPL-DOCX new</span>
+              <span class="menu-title">CIPL-DOCX</span>
               
             </a>
           </li>
@@ -1163,12 +1163,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
             <a class="nav-link" href="#"  onclick="navigate('/app/cipl-list'); return false;">
               <i class="typcn typcn-printer menu-icon"></i>
-              <span class="menu-title">CIPL-LIST new</span>
+              <span class="menu-title">CIPL-LIST</span>
               
             </a>
           </li>
 
-          <li class="nav-item {% if 'delivery-order' in request.path %}active{% endif %}">
+          <li class="nav-item {% if 'delivery-order' in request.path %}active{% endif %} hide">
 
             <a class="nav-link" href="#"  onclick="navigate('delivery-order'); return false;">
               <i class="typcn typcn-pencil menu-icon"></i>
@@ -1176,7 +1176,7 @@ document.addEventListener('DOMContentLoaded', function () {
               
             </a>
           </li>
-          <li class="nav-item {% if 'tally' in request.path %}active{% endif %}">
+          <li class="nav-item {% if 'tally' in request.path %}active{% endif %} hide">
 
             <a class="nav-link" href="#"  onclick="navigate('/app/tally'); return false;">
               <i class="typcn typcn-news menu-icon"></i>
