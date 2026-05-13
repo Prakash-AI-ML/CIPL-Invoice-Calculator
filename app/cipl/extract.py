@@ -331,7 +331,7 @@ def analysis_cipl(df, df1, DESCRIPTIONS_DATA, divided_by = None):
     modified_items = copy.deepcopy(original_items)
     total_idx = df1[df1.iloc[:, 6].astype(str).str.contains('total', case=False, na=False)].index[0]
     importer_of_record[0] = f"CONSIGNEE:\n{importer_of_record[0]}"
-    total_w = f'{int(total_w.replace(',', '')):,}'
+    total_w = f"{int(total_w.replace(',', '')):,}"
 
     if divided_by == None:
         total = df1.iloc[total_idx, 7]
