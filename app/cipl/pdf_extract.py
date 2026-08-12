@@ -223,6 +223,7 @@ def clean_dataframe(dic, description = None):
        
         item = data.get('ITEM')
         desc = (data.get('DESCRIPTION') or '')
+        desc = desc if " DESCRIPTION " not in desc else desc.partition("DESCRIPTION")[-1].strip()
 
         country = data.get('COUNTRY OF ORIGIN')
         # print(data, country)
