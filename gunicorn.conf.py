@@ -3,9 +3,9 @@ import os
 
 workers = 4
 worker_class = "uvicorn.workers.UvicornWorker"
-bind = "0.0.0.0:8002"
+bind = "0.0.0.0:8005"
 
-log_dir = "/home/ubuntu/Projects/SOA-APP/app/logs"
+log_dir = "/home/ubuntu/Projects/CIPL-Invoice-Calculator/app/logs"
 os.makedirs(log_dir, exist_ok=True)
 accesslog = f"{log_dir}/gunicorn_access.log"
 errorlog = f"{log_dir}/gunicorn_error.log"
