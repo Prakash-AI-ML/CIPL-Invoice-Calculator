@@ -53,6 +53,115 @@ def convert_docs_pdf(docx_temp_path, pdf_temp_path):
         print("Running on Linux")
         convert_docx_to_pdf(docx_temp_path, pdf_temp_path)
 
+
+def convert_docx_to_pdf(docx_path: str, pdf_path: str) -> str:
+    """
+    Convert a DOCX file to PDF using LibreOffice.
+
+    docx_path:
+        Full path to input .docx
+
+    pdf_path:
+        Full path where the resulting PDF should be placed.
+        Example:
+            /tmp/thai_pdf_xxx/output.pdf
+    """
+
+    docx_path = Path(docx_path).resolve()
+    pdf_path = Path(pdf_path).resolve()
+
+    if not docx_path.exists():
+        raise FileNotFoundError(f"DOCX file not found: {docx_path}")
+
+    # LibreOffice --outdir requires a DIRECTORY,
+    # not the final PDF filename.
+    output_dir = pdf_path.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Give LibreOffice an isolated profile.
+    # This avoids profile/lock problems when multiple FastAPI
+    # requests perform conversions at the same time.
+    lo_profile_dir = Path(
+        tempfile.mkdtemp(prefix="libreoffice_profile_")
+    ).resolve()
+
+    try:
+        result = subprocess.run(
+            [
+                "libreoffice",
+                "--headless",
+                f"-env:UserInstallation=file://{lo_profile_dir}",
+                "--convert-to",
+                "pdf:writer_pdf_Export",
+                "--outdir",
+                str(output_dir),
+                str(docx_path),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                "LibreOffice PDF conversion failed.\n"
+                f"Return code: {result.returncode}\n"
+                f"STDOUT:\n{result.stdout}\n"
+                f"STDERR:\n{result.stderr}"
+            )
+
+        # LibreOffice creates:
+        #
+        # input.docx -> input.pdf
+        #
+        # regardless of the name we want for the final PDF.
+        generated_pdf = output_dir / f"{docx_path.stem}.pdf"
+
+        if not generated_pdf.exists():
+            raise RuntimeError(
+                "LibreOffice completed but the PDF was not created.\n"
+                f"Expected: {generated_pdf}\n"
+                f"STDOUT:\n{result.stdout}\n"
+                f"STDERR:\n{result.stderr}"
+            )
+
+        # Rename input.pdf -> requested output.pdf
+        if generated_pdf != pdf_path:
+            if pdf_path.exists():
+                pdf_path.unlink()
+
+            generated_pdf.rename(pdf_path)
+
+        return str(pdf_path)
+
+    finally:
+        # Remove temporary LibreOffice profile
+        shutil.rmtree(lo_profile_dir, ignore_errors=True)
+
+
+def convert_docs_pdf(docx_temp_path: str, pdf_temp_path: str) -> str:
+    """
+    Cross-platform DOCX -> PDF wrapper.
+    """
+
+    if os.name == "nt":
+        print("Running on Windows")
+        return convert(docx_temp_path, pdf_temp_path)
+    elif os.name == "posix":
+        print("Running on Linux/Unix")
+        return convert_docx_to_pdf(
+                docx_path=docx_temp_path,
+                pdf_path=pdf_temp_path,
+            )
+    else:
+        raise RuntimeError(f"Unsupported operating system: {os.name}")
+
+    
+
+
+
+
 @router.post("/generate/sheet")
 async def generate_thai_sheet(
     data: dict
@@ -192,7 +301,7 @@ async def generate_tally_sheet(
         error_detail = traceback.format_exc()
         raise HTTPException(status_code=500, detail=error_detail)
 
-@router.post("/generate/docx1")
+@router.post("/generate/docx1/old")
 async def generate_tally_sheet(
     verification: bool,
     fnl_to_ori: bool,
@@ -289,3 +398,326 @@ async def generate_tally_sheet(
     except Exception as e:
         error_detail = traceback.format_exc()
         raise HTTPException(status_code=500, detail=error_detail)
+
+
+@router.post("/generate/docx1")
+async def generate_tally_sheet(
+    verification: bool,
+    fnl_to_ori: bool,
+    draft_docx: UploadFile = File(...),
+    thai_sheet: UploadFile = File(...),
+):
+    if not draft_docx or not thai_sheet:
+        raise HTTPException(
+            status_code=400,
+            detail="Both draft_docx and thai_sheet are required",
+        )
+
+    tmp_dir = None
+
+    try:
+        # ====================================================
+        # Create working temp directory
+        # ====================================================
+
+        tmp_dir = Path(
+            tempfile.mkdtemp(prefix="thai_")
+        ).resolve()
+
+        # ====================================================
+        # Validate DOCX
+        # ====================================================
+
+        if not draft_docx.filename:
+            raise HTTPException(
+                status_code=400,
+                detail="draft_docx filename is missing",
+            )
+
+        if not draft_docx.filename.lower().endswith(".docx"):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Only .docx files are allowed. "
+                    f"Got: {draft_docx.filename}"
+                ),
+            )
+
+        # Use a fixed safe filename instead of trusting the uploaded
+        # filename as a filesystem path.
+        template_path = tmp_dir / "template.docx"
+
+        with template_path.open("wb") as f:
+            shutil.copyfileobj(draft_docx.file, f)
+
+        # ====================================================
+        # Validate Excel
+        # ====================================================
+
+        if not thai_sheet.filename:
+            raise HTTPException(
+                status_code=400,
+                detail="thai_sheet filename is missing",
+            )
+
+        excel_filename = thai_sheet.filename.lower()
+
+        if not excel_filename.endswith((".xlsx", ".xls")):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Only .xlsx or .xls files are allowed. "
+                    f"Got: {thai_sheet.filename}"
+                ),
+            )
+
+        # Read uploaded Excel into memory
+        excel_bytes = await thai_sheet.read()
+        file_io = io.BytesIO(excel_bytes)
+
+        # ====================================================
+        # Read Excel
+        # ====================================================
+
+        if excel_filename.endswith(".xlsx"):
+            ori = pd.read_excel(
+                file_io,
+                sheet_name="ORIGINAL",
+                engine="openpyxl",
+            )
+
+            # Reset stream before reading second sheet
+            file_io.seek(0)
+
+            fnl = pd.read_excel(
+                file_io,
+                sheet_name="FINAL",
+                engine="openpyxl",
+            )
+
+        else:
+            ori = pd.read_excel(
+                file_io,
+                sheet_name="ORIGINAL",
+                engine="xlrd",
+            )
+
+            file_io.seek(0)
+
+            fnl = pd.read_excel(
+                file_io,
+                sheet_name="FINAL",
+                engine="xlrd",
+            )
+
+        # ====================================================
+        # Validate required columns
+        # ====================================================
+
+        required_columns = [
+            "REF NO",
+            "AMOUNT",
+            "THB",
+            "10%",
+            "THB+10%",
+            "7%",
+            "PAGE TOTAL",
+        ]
+
+        missing_ori = [
+            col for col in required_columns
+            if col not in ori.columns
+        ]
+
+        missing_fnl = [
+            col for col in required_columns
+            if col not in fnl.columns
+        ]
+
+        if missing_ori:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Missing columns in ORIGINAL sheet: "
+                    + ", ".join(missing_ori)
+                ),
+            )
+
+        if missing_fnl:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Missing columns in FINAL sheet: "
+                    + ", ".join(missing_fnl)
+                ),
+            )
+
+        # ====================================================
+        # Find index
+        # ====================================================
+
+        index_ = ori[ori["REF NO"].isnull()].index
+
+        # ====================================================
+        # Format numeric columns
+        # ====================================================
+
+        columns = [
+            "AMOUNT",
+            "THB",
+            "10%",
+            "THB+10%",
+            "7%",
+            "PAGE TOTAL",
+        ]
+
+        for col in columns:
+            ori[col] = ori[col].apply(
+                lambda val: (
+                    f"{val:,.2f}"
+                    if pd.notna(val)
+                    else val
+                )
+            )
+
+            fnl[col] = fnl[col].apply(
+                lambda val: (
+                    f"{val:,.2f}"
+                    if pd.notna(val)
+                    else val
+                )
+            )
+
+        fnl = fnl[columns]
+        ori = ori[columns]
+
+        # ====================================================
+        # Generate DOCX
+        # ====================================================
+
+        doc = await create_thai_document(
+            ori,
+            fnl,
+            template_path,
+            index_,
+            verification,
+            fnl_to_ori,
+        )
+
+        # ====================================================
+        # Generate filenames
+        # ====================================================
+
+        original_base_name = Path(
+            draft_docx.filename
+        ).stem
+
+        mode = "ORI" if fnl_to_ori else "FNL"
+        review = "-REVIEW" if verification else ""
+
+        docx_filename = (
+            f"{original_base_name}-{mode}{review}.docx"
+        )
+
+        pdf_filename = (
+            f"{original_base_name}-{mode}{review}.pdf"
+        )
+
+        zip_filename = (
+            f"{original_base_name}_files.zip"
+        )
+
+        # ====================================================
+        # Save generated DOCX
+        # ====================================================
+
+        generated_docx_path = tmp_dir / docx_filename
+
+        doc.save(str(generated_docx_path))
+
+        # ====================================================
+        # Convert DOCX -> PDF
+        # ====================================================
+
+        generated_pdf_path = tmp_dir / pdf_filename
+
+        convert_docs_pdf(
+            str(generated_docx_path),
+            str(generated_pdf_path),
+        )
+
+        # ====================================================
+        # Verify PDF
+        # ====================================================
+
+        if not generated_pdf_path.exists():
+            raise RuntimeError(
+                f"PDF was not generated: {generated_pdf_path}"
+            )
+
+        # ====================================================
+        # Create ZIP in memory
+        # ====================================================
+
+        zip_buffer = BytesIO()
+
+        with zipfile.ZipFile(
+            zip_buffer,
+            "w",
+            compression=zipfile.ZIP_DEFLATED,
+        ) as zipf:
+
+            # Add DOCX
+            with generated_docx_path.open("rb") as f:
+                zipf.writestr(
+                    f"WORD/{docx_filename}",
+                    f.read(),
+                )
+
+            # Add PDF
+            with generated_pdf_path.open("rb") as f:
+                zipf.writestr(
+                    f"PDF/{pdf_filename}",
+                    f.read(),
+                )
+
+        zip_buffer.seek(0)
+
+        # ====================================================
+        # Return ZIP
+        # ====================================================
+
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="{zip_filename}"'
+                )
+            },
+        )
+
+    except HTTPException:
+        # Don't turn intentional 400 errors into 500 errors
+        raise
+
+    except Exception as e:
+        error_detail = traceback.format_exc()
+
+        print(error_detail)
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e),
+        )
+
+    finally:
+        # ====================================================
+        # Cleanup working directory
+        # ====================================================
+
+        if tmp_dir and tmp_dir.exists():
+            shutil.rmtree(
+                tmp_dir,
+                ignore_errors=True,
+            )
