@@ -28,6 +28,7 @@ import pdfplumber
 from app.crud.cipl_desc import get_cipl_descs
 import tempfile
 import subprocess
+import shutil
 from pathlib import Path
 
 # Setup logger for this module
@@ -37,7 +38,7 @@ router = APIRouter()
 
 os_name = platform.system()
 
-def convert_docx_to_pdf(docx_path: str, output_dir: str):
+def convert_docx_to_pdf1(docx_path: str, output_dir: str):
     subprocess.run([
         "/usr/bin/libreoffice",
         "--headless",
@@ -51,13 +52,120 @@ def convert_docx_to_pdf(docx_path: str, output_dir: str):
     pdf_path = Path(output_dir) / (Path(docx_path).stem + ".pdf")
     return str(pdf_path)
 
-def convert_docs_pdf(docx_temp_path, pdf_temp_path):
+def convert_docs_pdf1(docx_temp_path, pdf_temp_path):
     if os_name == "Windows":
         print("Running on Windows")
         convert(docx_temp_path, pdf_temp_path)
     elif os_name == "Linux":
         print("Running on Linux")
         convert_docx_to_pdf(docx_temp_path, pdf_temp_path)
+
+
+
+def convert_docx_to_pdf(docx_path: str, pdf_path: str) -> str:
+    """
+    Convert a DOCX file to PDF using LibreOffice.
+
+    docx_path:
+        Full path to input .docx
+
+    pdf_path:
+        Full path where the resulting PDF should be placed.
+        Example:
+            /tmp/thai_pdf_xxx/output.pdf
+    """
+
+    docx_path = Path(docx_path).resolve()
+    pdf_path = Path(pdf_path).resolve()
+
+    if not docx_path.exists():
+        raise FileNotFoundError(f"DOCX file not found: {docx_path}")
+
+    # LibreOffice --outdir requires a DIRECTORY,
+    # not the final PDF filename.
+    output_dir = pdf_path.parent
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Give LibreOffice an isolated profile.
+    # This avoids profile/lock problems when multiple FastAPI
+    # requests perform conversions at the same time.
+    lo_profile_dir = Path(
+        tempfile.mkdtemp(prefix="libreoffice_profile_")
+    ).resolve()
+
+    try:
+        result = subprocess.run(
+            [
+                "/usr/bin/libreoffice",
+                "--headless",
+                f"-env:UserInstallation=file://{lo_profile_dir}",
+                "--convert-to",
+                "pdf:writer_pdf_Export",
+                "--outdir",
+                str(output_dir),
+                str(docx_path),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                "LibreOffice PDF conversion failed.\n"
+                f"Return code: {result.returncode}\n"
+                f"STDOUT:\n{result.stdout}\n"
+                f"STDERR:\n{result.stderr}"
+            )
+
+        # LibreOffice creates:
+        #
+        # input.docx -> input.pdf
+        #
+        # regardless of the name we want for the final PDF.
+        generated_pdf = output_dir / f"{docx_path.stem}.pdf"
+
+        if not generated_pdf.exists():
+            raise RuntimeError(
+                "LibreOffice completed but the PDF was not created.\n"
+                f"Expected: {generated_pdf}\n"
+                f"STDOUT:\n{result.stdout}\n"
+                f"STDERR:\n{result.stderr}"
+            )
+
+        # Rename input.pdf -> requested output.pdf
+        if generated_pdf != pdf_path:
+            if pdf_path.exists():
+                pdf_path.unlink()
+
+            generated_pdf.rename(pdf_path)
+
+        return str(pdf_path)
+
+    finally:
+        # Remove temporary LibreOffice profile
+        shutil.rmtree(lo_profile_dir, ignore_errors=True)
+
+
+def convert_docs_pdf(docx_temp_path: str, pdf_temp_path: str) -> str:
+    """
+    Cross-platform DOCX -> PDF wrapper.
+    """
+
+    if os.name == "nt":
+        print("Running on Windows")
+        return convert(docx_temp_path, pdf_temp_path)
+    elif os.name == "posix":
+        print("Running on Linux/Unix")
+        return convert_docx_to_pdf(
+                docx_path=docx_temp_path,
+                pdf_path=pdf_temp_path,
+            )
+    else:
+        raise RuntimeError(f"Unsupported operating system: {os.name}")
+
+    
 
 
 @router.post("/docx")
