@@ -25,7 +25,7 @@ def update_html_path(file_path):
 
 folder_path = r'app/templates'
 for file in os.listdir(folder_path):
-    if folder_path.endswith('.html'):
+    if file.endswith('.html'):
         file_path = os.path.join(folder_path, file)
         print(file_path)
     # Example usage
@@ -34,7 +34,7 @@ for file in os.listdir(folder_path):
 print('====='* 10,'/  STATIC FILES  /', '====='* 10 )
 folder_path = r'app/static/app'
 for file in os.listdir(folder_path):
-    if folder_path.endswith('.js'):
+    if file.endswith('.js'):
         file_path = os.path.join(folder_path, file)
         print(file_path)
     # Example usage
