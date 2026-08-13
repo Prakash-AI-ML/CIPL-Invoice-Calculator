@@ -88,7 +88,7 @@ def convert_docx_to_pdf(docx_path: str, pdf_path: str) -> str:
     try:
         result = subprocess.run(
             [
-                "usr/bin/libreoffice",
+                "/usr/bin/libreoffice",
                 "--headless",
                 f"-env:UserInstallation=file://{lo_profile_dir}",
                 "--convert-to",

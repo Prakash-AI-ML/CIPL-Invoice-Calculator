@@ -39,7 +39,7 @@ os_name = platform.system()
 
 def convert_docx_to_pdf(docx_path: str, output_dir: str):
     subprocess.run([
-        "usr/bin/libreoffice",
+        "/usr/bin/libreoffice",
         "--headless",
         "--convert-to",
         "pdf",
