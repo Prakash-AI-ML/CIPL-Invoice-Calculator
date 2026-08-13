@@ -11,24 +11,6 @@ from docx import Document
 BASE_DIR = Path(__file__).resolve().parent.parent
 file_path = BASE_DIR / "static" / "app" / "CIPL ES-00096_.docx"
 
-# ─────────────────────────────────────────────────────────────
-# Shared width constants
-#
-# Page is Letter (21.59cm) with 1cm left/right margins (set_margin()),
-# giving 19.59cm of printable width. We target slightly under that as
-# a safety buffer, and keep every table in the document derived from
-# the SAME constant so they all line up to the same left/right edges
-# regardless of which renderer (Word vs LibreOffice) draws them.
-#
-# Tables that use a 0.19cm left indent (tblInd) need their own column
-# widths to sum to PAGE_CONTENT_WIDTH - TABLE_INDENT so their right
-# edge still lines up with the non-indented tables above them.
-# ─────────────────────────────────────────────────────────────
-PAGE_CONTENT_WIDTH = Cm(19.4)   # total width for logo/header/consignee tables
-TABLE_INDENT = Cm(0.19)         # left indent used on the items + total-row tables
-INDENTED_CONTENT_WIDTH = Cm(19.4 - 0.19)  # total width for items + total-row tables
-
-
 def apply_default_font(doc, font_name='Arial', font_size=9):
     for para in doc.paragraphs:
         for run in para.runs:
@@ -61,36 +43,6 @@ def set_table_row_height(row, height_cm):
     trPr.append(trHeight)
 
 
-def set_table_column_widths(table, col_widths_cm):
-    """
-    Synchronize BOTH the table's grid definition (w:tblGrid) and every
-    existing cell's own width (w:tcW) to the given widths.
-
-    This matters because python-docx keeps these two things completely
-    independent:
-      - `table.columns[i].width = ...` only updates w:tblGrid
-      - `cell.width = ...` only updates that one cell's w:tcW
-
-    If only cell widths are set (as the old code did for the items
-    table), w:tblGrid is left at whatever default python-docx assigned
-    when the table was created (an equal split of the total width).
-    Word tends to quietly prefer the per-cell widths and renders fine,
-    but LibreOffice (used for the Linux DOCX->PDF conversion) can honor
-    w:tblGrid instead for fixed-layout tables, which produces equal-width
-    columns instead of the intended layout — this is the "PDF table
-    width mismatch on Ubuntu" bug.
-
-    Calling this right after a table is created keeps both in sync so
-    every renderer sees one unambiguous column-width definition.
-    """
-    for i, width_cm in enumerate(col_widths_cm):
-        table.columns[i].width = Cm(width_cm)
-
-    for row in table.rows:
-        for i, width_cm in enumerate(col_widths_cm):
-            if i < len(row.cells):
-                row.cells[i].width = Cm(width_cm)
-
 
 def set_cell_borders(cell, top=None, bottom=None, left=None, right=None):
     """
@@ -120,16 +72,16 @@ def write_cell(cell, text, bold=False, align=WD_ALIGN_PARAGRAPH.LEFT, width=None
         cell.width = Cm(width)
     if header:
         cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
-
+    
     # Clear default paragraph
     p = cell.paragraphs[0]
     p.clear()
-
+    
     # Remove any indent
-    p.paragraph_format.left_indent = Cm(indent)
+    p.paragraph_format.left_indent = Cm(indent)      
     p.paragraph_format.right_indent = Cm(right_indent)    # left indent
     p.paragraph_format.first_line_indent = Cm(0)   # first-line indent
-
+    
     # Add text
     run = p.add_run(str(text))
     run.bold = bold
@@ -155,6 +107,8 @@ def write_cell(cell, text, bold=False, align=WD_ALIGN_PARAGRAPH.LEFT, width=None
                 new_p = cell.add_paragraph()
                 new_p.paragraph_format.left_indent = Cm(indent)
                 new_p.paragraph_format.first_line_indent = Cm(indent)
+
+
 
 
 def write_amount(cell, text, width, bold=False):
@@ -203,7 +157,7 @@ def set_margin():
 
 
     tgt = doc2.sections[0]
-
+ 
 
     tgt.top_margin = Cm(0.75)
     tgt.bottom_margin = Cm(0.25)
@@ -218,15 +172,18 @@ def set_logo(doc2, customer):
     table = doc2.add_table(rows=1, cols=2)
     table.allow_autofit = False
 
-    # Column widths — scaled to share the same total width as every
-    # other table in the document (PAGE_CONTENT_WIDTH)
-    col_widths = [9.46, 9.94]
-    set_table_column_widths(table, col_widths)
+    
+    # Column widths
+    col_widths = [10, 10.5]
+    # Approx half-page width each column
+    table.columns[0].width = Cm(col_widths[0])
+    table.columns[1].width = Cm(col_widths[1])
 
     for i, cell in enumerate(table.rows[0].cells):
-
+        cell.width = Cm(col_widths[i])
+        
         if i == 0:
-
+            
             cell.vertical_alignment = WD_ALIGN_VERTICAL.TOP
 
             p_left = cell.add_paragraph()
@@ -255,8 +212,8 @@ def set_logo(doc2, customer):
                 run = p_right.add_run(customer_ + '\n')
                 if idx == 0:
                     run.bold = True
-
-
+            
+            
     return doc2
 
 
@@ -264,18 +221,17 @@ def set_header(doc2, text = "COMMERCIAL INVOICE / PACKING LIST"):
     table = doc2.add_table(rows=1, cols=1)
     table.allow_autofit = False
     table.autofit = False
-
-    # Single-column width — matches PAGE_CONTENT_WIDTH like every
-    # other table in the document
-    col_widths = [19.4]
-    set_table_column_widths(table, col_widths)
-
+    col_width = 21
+    # Approx half-page width each column
+    table.columns[0].width = Cm(col_width)
+    # table.columns[1].width = Cm(9)
     row = table.rows[0]
     set_table_row_height(row, height_cm=0.60)
 
     # Remove borders
     for row in table.rows:
         for cell in row.cells:
+            cell.width = Cm(col_width)
             tc = cell._tc
             tcPr = tc.get_or_add_tcPr()
             tcBorders = tcPr.first_child_found_in("w:tcBorders")
@@ -293,8 +249,8 @@ def set_header(doc2, text = "COMMERCIAL INVOICE / PACKING LIST"):
     p_left.alignment = WD_ALIGN_PARAGRAPH.CENTER
     # p_left.runs
     for run in p_left.runs:
-        run.font.name = 'Arial'
-        run.font.size = Pt(12)
+        run.font.name = 'Arial'  
+        run.font.size = Pt(12) 
         run.font.color.rgb = RGBColor(23, 54, 93)
         run.font.bold = True
     run = p_left.add_run()
@@ -314,14 +270,15 @@ def set_consignee(doc2, consginee, labels):
         run.font.size = Pt(9)
         run.bold = bold
         run._element.rPr.rFonts.set(qn('w:eastAsia'), "Arial")
-
-    # Column widths — scaled to share the same total width as every
-    # other table in the document (PAGE_CONTENT_WIDTH)
-    col_widths = [9.46, 4.92, 5.02]
-    set_table_column_widths(table, col_widths)
+    # Column widths
+    col_widths = [10, 5.2, 5.3]
+    table.columns[0].width = Cm(col_widths[0])
+    table.columns[1].width = Cm(col_widths[1])
+    table.columns[2].width = Cm(col_widths[2])
 
     for i, cell in enumerate(table.rows[0].cells):
-
+        cell.width = Cm(col_widths[i])
+        
         if i == 0:
             p = cell.paragraphs[0]
             for idx, con_ in enumerate(consginee):
@@ -333,8 +290,8 @@ def set_consignee(doc2, consginee, labels):
                 if idx == 0:
                     bold = True
                 add_run(p, con_ +"\n", bold=bold)
-
-
+            
+           
         elif i == 1:
             for i in range(7):
                 p_mid = cell.paragraphs[0] if i == 0 else cell.add_paragraph()
@@ -345,8 +302,8 @@ def set_consignee(doc2, consginee, labels):
                 p_right = cell.paragraphs[0] if i == 0 else cell.add_paragraph()
                 add_run(p_right, list(labels.values())[i], align=WD_ALIGN_PARAGRAPH.RIGHT)
                 # p_right.paragraph_format.right_indent = Cm(0.19)
-
-
+   
+    
     # doc2.add_paragraph()
     return doc2
 
@@ -373,7 +330,7 @@ def add_packing_details(doc, col_widths, packing_details, indent):
         # packing_header = f"{'\n' *( total_table_lines - add_next_line)}PACKING DETAILS:\n"
     else:
         packing_header = "PACKING DETAILS:\n"
-
+       
     p = cells[1].paragraphs[0]
 
     # Remove any indent
@@ -395,14 +352,14 @@ def add_packing_details(doc, col_widths, packing_details, indent):
         run = p.add_run(d + "\n")
         run.font.name = "Arial"
         run.font.size = Pt(9)
-        run._element.rPr.rFonts.set(qn('w:eastAsia'), "Arial")
+        run._element.rPr.rFonts.set(qn('w:eastAsia'), "Arial")   
 
     pkg = cells[1].add_paragraph()
 
     pkg.alignment = WD_ALIGN_PARAGRAPH.LEFT
     pkg.paragraph_format.right_indent = Cm(-0.2)
 
-
+        
     for idx, d in enumerate(packing_details['total'].items()):
         key, val = d
         pkg.add_run(f"{key} {val}\n").bold = True
@@ -432,7 +389,7 @@ def add_packing_details(doc, col_widths, packing_details, indent):
     return doc
 
 def add_total_row(doc, col_width, total):
-
+    
     footer_table = doc.add_table(rows=1, cols=2)
     footer_table.allow_autofit = False
     footer_table.autofit = False
@@ -446,9 +403,10 @@ def add_total_row(doc, col_width, total):
 
     col_widths = [col_width.pop(), sum(col_width) ]
 
-    # Sync BOTH tblGrid and per-cell widths (footer_table has 1 row so
-    # far, set_table_column_widths handles that correctly)
-    set_table_column_widths(footer_table, [col_widths[1], col_widths[0]])
+    
+    footer_table.columns[0].width = Cm(col_widths[1])
+    footer_table.columns[1].width = Cm(col_widths[0])
+
 
     # # Apply solid border to both cells
     for idx, cell in enumerate(footer_table.rows[0].cells):
@@ -493,23 +451,9 @@ def add_items_table(doc, items, packing_details, total):
     tbl_ind.set(qn('w:type'), 'dxa')
     tbl_pr.append(tbl_ind)
 
-    # Column widths — scaled down slightly (from the original
-    # 1.11/9.17/1.55/1.11/1.11/1.11/1.99/2.43, sum 19.58) so the total
-    # matches INDENTED_CONTENT_WIDTH exactly and lines up with the
-    # rest of the document.
-    col_widths = [1.09, 9.00, 1.52, 1.09, 1.09, 1.09, 1.95, 2.38]
-
-    # >>> THE FIX <<<
-    # Sync w:tblGrid to these widths BEFORE writing any cells. Without
-    # this, w:tblGrid keeps python-docx's default equal-width split
-    # while individual cells carry the real widths — Word quietly
-    # prefers the cell widths and looks fine, but LibreOffice (used
-    # for DOCX->PDF conversion on Linux) can honor the stale
-    # w:tblGrid instead, rendering all columns equal width. That
-    # mismatch is what produces "PDF table width wrong on Ubuntu,
-    # fine on Windows."
-    set_table_column_widths(table, col_widths)
-
+    # Column widths
+    
+    col_widths = [1.11, 9.17,1.55,1.11,1.11, 1.11, 1.99,2.43]
     # Header row
     for i, h in enumerate(headers):
         write_cell(table.rows[0].cells[i], h, bold=True, align=WD_ALIGN_PARAGRAPH.CENTER, width=col_widths[i], add_para= False, header = True)
@@ -530,7 +474,7 @@ def add_items_table(doc, items, packing_details, total):
                 write_cell(cells[i], val, align=align, width=col_widths[i], indent= indent, color = 'red')
             else:
                 write_cell(cells[i], val, align=align, width=col_widths[i], indent= indent)
-
+            
     num_rows = len(items)
     for idx, row in enumerate(table.rows):
         if idx == 0:
@@ -550,7 +494,7 @@ def add_items_table(doc, items, packing_details, total):
                 top=top,
                 bottom=bottom
             )
-
+    
     # Optional: set header row height
     table.rows[0].height = Cm(0.8)
     tbl = table._tbl
@@ -574,9 +518,9 @@ def set_footer(doc2):
     table.allow_autofit = False
 
     for i, cell in enumerate(table.rows[0].cells):
-
+        
         if i == 0:
-
+            
             pkg = cell.paragraphs[0]
             pkg.alignment = WD_ALIGN_PARAGRAPH.LEFT
             pkg.paragraph_format.right_indent = Cm(0.19)
@@ -619,3 +563,5 @@ def create_documents(data, filename):
     doc = set_footer(doc)
     return doc
     doc.save("output.docx")
+
+
