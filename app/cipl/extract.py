@@ -122,7 +122,7 @@ def clean_dataframe(dic):
             new_data.append(data_)
     return new_data
 
-def calculate_cbm(lines):
+def calculate_cbm1(lines):
     total_cbm = 0.0
     for line in lines:
         line = line.strip()
@@ -148,7 +148,44 @@ def calculate_cbm(lines):
 
     return f'{total_cbm:,.2f}'
 
-def get_packing_details(df):
+def calculate_cbm(lines):
+    total_cbm = 0.0
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        data1 = line.split('/')
+        if len(data1) < 2:
+            continue
+
+        data = {
+            'quantity': data1[0],
+            'area': data1[1].replace('cm', '').replace('-', '').strip(),
+            'weight': data1[-1]
+        }
+        qty_match = re.match(r"^\s*(\d+)", data['quantity'])
+        if not qty_match:
+            continue
+
+        quantity = int(qty_match.group(1))
+        data['quantity'] = quantity
+
+        dims = [d.strip() for d in data['area'].split('x')]
+        if len(dims) != 3 or not all(d.isdigit() for d in dims):
+            continue
+
+        length, width, height = [int(d) for d in dims]
+
+        # dimensions are in cm regardless of whether the line's unit suffix was present
+        cbm_per_item = (length * width * height) / 1_000_000
+        total_cbm += cbm_per_item * quantity
+
+        print(data, cbm_per_item * quantity, total_cbm)
+
+    return f'{total_cbm:,.2f}'
+
+def get_packing_details1(df):
     pck = df[df.iloc[:, 2].astype(str).str.contains('Packing Details:', case=False, na=False)].index[0]
     total_pck = df[df.iloc[:, 4].astype(str).str.contains('TOTAL PACKAGES:', case=False, na=False)].index[0]
     total_gross = df[df.iloc[:, 4].astype(str).str.contains('GROSS WEIGHT:', case=False, na=False)].index[0]
@@ -164,7 +201,8 @@ def get_packing_details(df):
                 qty = int(qty_match.group(1)) if qty_match else 1
 
                 # extract weight (int)
-                weight_match = re.search(r'(\d+)\s*kgs', item, re.IGNORECASE)
+                # weight_match = re.search(r'(\d+)\s*kgs', item, re.IGNORECASE)
+                weight_match = re.search(r'(\d+)\s*kg(?:s)?', item, re.IGNORECASE)
                 weight = int(weight_match.group(1)) if weight_match else 0
 
                 total_weight = qty * weight
@@ -172,10 +210,55 @@ def get_packing_details(df):
                 # ensure "each" format in string
                 base = item.strip()
                 if 'each' not in base.lower():
-                    base = base.replace('kgs', 'kgs each')
+                    # base = base.replace('kgs', 'kgs each')
+                    base = re.sub(
+                    r'(\d+\s*kg(?:s)?)',
+                    r'\1 each',
+                    base,
+                    count=1,
+                    flags=re.IGNORECASE
+                )
 
                 output.append(f"{base} = {total_weight:,} KGs")
     
+    total_pcks = df.iloc[total_pck, 4].replace('TOTAL PACKAGES:', '').strip()
+    total_w = df.iloc[total_gross, 4].replace('GROSS WEIGHT:', '').replace('kgs', '').strip()
+    return pcks, output, total_pcks, total_w, gross_w, total_w == f'{gross_w:,}'
+
+def get_packing_details(df):
+    pck = df[df.iloc[:, 2].astype(str).str.contains('Packing Details:', case=False, na=False)].index[0]
+    total_pck = df[df.iloc[:, 4].astype(str).str.contains('TOTAL PACKAGES:', case=False, na=False)].index[0]
+    total_gross = df[df.iloc[:, 4].astype(str).str.contains('GROSS WEIGHT:', case=False, na=False)].index[0]
+
+    pcks = df.iloc[pck + 1:total_pck, 2].dropna().astype(str).tolist()
+    output = []
+    gross_w = 0
+    if pcks:
+        for item in pcks:
+            # extract number of pieces (int)
+            if item.split()[0].isnumeric():
+                qty_match = re.match(r'(\d+)', item)
+                qty = int(qty_match.group(1)) if qty_match else 1
+
+                # extract weight (int) - accepts "kg" or "kgs"
+                weight_match = re.search(r'(\d+)\s*kg(?:s)?', item, re.IGNORECASE)
+                weight = int(weight_match.group(1)) if weight_match else 0
+
+                total_weight = qty * weight
+                gross_w += total_weight
+
+                # normalize unit spelling to "kgs" without touching "each"
+                base = item.strip()
+                base = re.sub(
+                    r'(\d+\s*kg)(s?)',
+                    r'\1s',
+                    base,
+                    count=1,
+                    flags=re.IGNORECASE
+                )
+
+                output.append(f"{base} = {total_weight:,} KGs")
+
     total_pcks = df.iloc[total_pck, 4].replace('TOTAL PACKAGES:', '').strip()
     total_w = df.iloc[total_gross, 4].replace('GROSS WEIGHT:', '').replace('kgs', '').strip()
     return pcks, output, total_pcks, total_w, gross_w, total_w == f'{gross_w:,}'

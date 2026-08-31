@@ -24,7 +24,7 @@ def regex(raw_text):
 
 
 
-def calculate_cbm(lines):
+def calculate_cbm1(lines):
     total_cbm = 0.0
     for line in lines:
         line = line.strip()
@@ -47,6 +47,43 @@ def calculate_cbm(lines):
             total_cbm += cbm_per_item * quantity
             
             print(data, cbm_per_item * quantity, total_cbm)
+
+    return f'{total_cbm:,.2f}'
+
+def calculate_cbm(lines):
+    total_cbm = 0.0
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        data1 = line.split('/')
+        if len(data1) < 2:
+            continue
+
+        data = {
+            'quantity': data1[0],
+            'area': data1[1].replace('cm', '').replace('-', '').strip(),
+            'weight': data1[-1]
+        }
+        qty_match = re.match(r"^\s*(\d+)", data['quantity'])
+        if not qty_match:
+            continue
+
+        quantity = int(qty_match.group(1))
+        data['quantity'] = quantity
+
+        dims = [d.strip() for d in data['area'].split('x')]
+        if len(dims) != 3 or not all(d.isdigit() for d in dims):
+            continue
+
+        length, width, height = [int(d) for d in dims]
+
+        # dimensions are in cm regardless of whether the line's unit suffix was present
+        cbm_per_item = (length * width * height) / 1_000_000
+        total_cbm += cbm_per_item * quantity
+
+        print(data, cbm_per_item * quantity, total_cbm)
 
     return f'{total_cbm:,.2f}'
 
@@ -309,7 +346,7 @@ def get_table_items(table, table_name= 'packing_details', divided_by = None, des
 def get_packing_details(table, lines):
     pcks = re.split(r'packing details:?\n', table[7][2], flags=re.IGNORECASE)[-1].split('\n')
     m = re.search(r'Reference\s*No:\s*([A-Za-z0-9\-]+)\s*Date:\s*([\d/]+)', table[1][3], re.IGNORECASE)
-    
+
     if m:
         reference_no = m.group(1)
         date = m.group(2)
@@ -326,7 +363,6 @@ def get_packing_details(table, lines):
         if m2:
             total_w = m2.group(1)
 
-
     output = []
     gross_w = 0
     if pcks:
@@ -336,20 +372,27 @@ def get_packing_details(table, lines):
                 qty_match = re.match(r'(\d+)', item)
                 qty = int(qty_match.group(1)) if qty_match else 1
 
-                # extract weight (int)
-                weight_match = re.search(r'(\d+)\s*kgs', item, re.IGNORECASE)
+                # extract weight (int) - accepts "kg" or "kgs"
+                weight_match = re.search(r'(\d+)\s*kg(?:s)?', item, re.IGNORECASE)
                 weight = int(weight_match.group(1)) if weight_match else 0
 
                 total_weight = qty * weight
                 gross_w += total_weight
-                # ensure "each" format in string
+
+                # normalize unit spelling to "kgs" (never inserts/removes "each")
                 base = item.strip()
-                if 'each' not in base.lower():
-                    base = base.replace('kgs', 'kgs each')
+                base = re.sub(
+                    r'(\d+\s*kg)(s?)',
+                    r'\1s',
+                    base,
+                    count=1,
+                    flags=re.IGNORECASE
+                )
 
                 output.append(f"{base} = {total_weight:,} KGs")
-    total_w =total_w.replace('kgs', '').strip()
-    
+
+    total_w = total_w.replace('kgs', '').strip()
+
     return pcks, output, total_pcks, total_w, gross_w, total_w == f'{gross_w:,}'
 
 def find_table_region(lines):
