@@ -209,6 +209,9 @@ async def generate_thai_sheet(
         traceback.print_exc()
 
     except Exception as e:
+        print("\n========== UNEXPECTED SERVER ERROR ==========")
+        traceback.print_exc()
+        print("==============================================\n")
         raise HTTPException(500, f"Server error: {str(e)}")
 
     # finally:

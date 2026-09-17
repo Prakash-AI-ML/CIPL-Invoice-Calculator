@@ -9,8 +9,16 @@ def create_thai_data(data):
         ref_date = ci['reference_date']
         idx = 1
         for item in  ci['items']:
-            if item['description'].lower().startswith('row') and item['fob_price_sgd'] == '' and item['fob_amount_sgd'] == '':
+            if (
+                    (
+                        item['description'].lower().startswith('row')
+                        or item['description'].lower().startswith('mda')
+                    )
+                    and item['fob_price_sgd'] == ''
+                    and item['fob_amount_sgd'] == ''
+                ):
                 continue
+            print('test', item)
             dic = {'REF NO': ref, 'REF DATE': ref_date,
                         'ITEM NO.': idx, #item['item'],
                         'DESCRIPTION': item['description'],
