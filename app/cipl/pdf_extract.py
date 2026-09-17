@@ -705,19 +705,30 @@ def analysis_ci(page, DESCRIPTIONS_DATA, divided_by = None):
 
 
     for item in modified_items:
-        if item['description'] in DESCRIPTIONS_DATA['original']:
-            idx = DESCRIPTIONS_DATA['original'].index(item['description'])
-            item['description'] = DESCRIPTIONS_DATA['modified'][idx]
+        if port_loading.lower() == "singapore" and  port_discharge.lower() == 'malaysia':
+
+            # item['description'] = item['description'].replace('Pipe', '')
+            item['description'] = re.sub(r'pipe', '', item['description'], flags=re.IGNORECASE)
             item['description_modified'] = 1
-        elif item['gpn'] in DESCRIPTIONS_DATA['item_id']:
-            idx = DESCRIPTIONS_DATA['item_id'].index(item['gpn'])
-            item['description'] = DESCRIPTIONS_DATA['modified'][idx]
-            item['description_modified'] = 1
-        # if item['description'] in DESCRIPTION_MAPPING:
-        #     item['description'] = DESCRIPTION_MAPPING[item['description']]
-        #     item['description_modified'] = 1
-        if 'ROW' in item['description']:
-            item['description_modified'] = 1
+            if re.match(r'^(MDA\d+|ROW\d+|MDA \d+|ROW \d+)', item['description']):
+                item['description_modified'] = 1
+            # pass
+        else:
+            if re.match(r'^(MDA\d+|ROW\d+|MDA \d+|ROW \d+)', item['description']):
+                item['description_modified'] = 1
+            if item['description'] in DESCRIPTIONS_DATA['original']:
+                idx = DESCRIPTIONS_DATA['original'].index(item['description'])
+                item['description'] = DESCRIPTIONS_DATA['modified'][idx]
+                item['description_modified'] = 1
+            elif item['gpn'] in DESCRIPTIONS_DATA['item_id']:
+                idx = DESCRIPTIONS_DATA['item_id'].index(item['gpn'])
+                item['description'] = DESCRIPTIONS_DATA['modified'][idx]
+                item['description_modified'] = 1
+            # if item['description'] in DESCRIPTION_MAPPING:
+            #     item['description'] = DESCRIPTION_MAPPING[item['description']]
+            #     item['description_modified'] = 1
+            if 'ROW' in item['description']:
+                item['description_modified'] = 1
   
     data = dict(
                 shipper = shipper,
