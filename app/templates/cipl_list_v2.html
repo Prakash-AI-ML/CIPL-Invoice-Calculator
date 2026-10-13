@@ -1092,6 +1092,9 @@ function disableAllFieldsExceptContainer() {
       const displayNo = rowIndex + 1;
 
       const tr = document.createElement("tr");
+      //  <td>
+//     <textarea class="form-control" name="items[${rowIndex}].item_no">${escapeHtml(item.item_no || "")}</textarea>
+// </td> 
       tr.innerHTML = `
         <td>${displayNo}</td>
         <td><textarea class="form-control" rows="3" name="items[${rowIndex}].description">${escapeHtml(item.description || "")}</textarea></td>

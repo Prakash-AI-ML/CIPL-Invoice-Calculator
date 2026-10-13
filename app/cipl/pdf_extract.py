@@ -625,8 +625,11 @@ def analysis_pl(page,  divided_by = None):
     # original_items, total_amount = get_table_items(table, table_name = 'invoice', divided_by = divided_by)
     # modified_items = copy.deepcopy(original_items)
     # total_idx = df1[df1.iloc[:, 6].astype(str).str.contains('total', case=False, na=False)].index[0]
+    
     importer_of_record[0] = f"CONSIGNEE:\n{importer_of_record[0]}"
-    total_w = f"{int(total_w.replace(',', '')):,}"
+    
+    # ['CONSIGNEE:\nInterbridge Solutions Co Ltd', '369/54 Soi 2, Finest', 'Hometown Village', 'Moo 2, T.Surasak, A.Sriracha,', 'Chonburi 20110, Thailand']
+    total_w = f"{int(total_w.replace(', ', '').replace(',', '')):,}"
 
     # if divided_by == None:
     #     total = float(table[8][-1].replace('$', '').replace(',', '').strip())
@@ -695,7 +698,13 @@ def analysis_ci(page, DESCRIPTIONS_DATA, divided_by = None):
     original_items, total_amount = get_table_items(table, table_name = 'invoice', divided_by = divided_by, descriptions=descriptions)
     modified_items = copy.deepcopy(original_items)
     # total_idx = df1[df1.iloc[:, 6].astype(str).str.contains('total', case=False, na=False)].index[0]
-    importer_of_record[0] = f"CONSIGNEE:\n{importer_of_record[0]}"
+    # importer_of_record[0] = f"CONSIGNEE:\n{importer_of_record[0]}"
+    if importer_of_record[0].lower() == 'Interbridge Solutions Co Ltd'.lower():
+        print("Updated the consignee name from *Interbridge Solutions Co Ltd* to *Everpro Co., Ltd (Head Office)")
+        importer_of_record = ['CONSIGNEE:\nEverpro Co., Ltd (Head Office)', '189/388 Village No. 5, Pharam 2Rd, Panthai Norasing, Muang,', 'Samut Sakhon 74000', 'Tel: 034-872-392', 'Fax: 034-872-393', 'Tax ID: 0115558011202']
+    elif importer_of_record[0].lower() != 'Interbridge Solutions Co Ltd'.lower():
+        importer_of_record[0] = f"CONSIGNEE:\n{importer_of_record[0]}"
+    
     # total_w = f'{int(total_w.replace(',', '')):,}'
 
     if divided_by == None:
