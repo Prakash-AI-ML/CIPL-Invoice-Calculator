@@ -83,7 +83,7 @@ def calculate_cbm(lines):
         cbm_per_item = (length * width * height) / 1_000_000
         total_cbm += cbm_per_item * quantity
 
-        print(data, cbm_per_item * quantity, total_cbm)
+        print(data, cbm_per_item * quantity, 'total cbm', total_cbm)
 
     return f'{total_cbm:,.2f}'
 
@@ -388,8 +388,14 @@ def get_packing_details(table, lines):
                     count=1,
                     flags=re.IGNORECASE
                 )
+                if base:
+                    if '=' in base:
+                        base = base.partition('=')[0].strip()
+                    if 'each' in base.lower():
+                        base = base.partition('each')[0].strip()
 
                 output.append(f"{base} = {total_weight:,} KGs")
+                # output.append(f"{base} = {total_weight:,} KGs") #verify
 
     total_w = total_w.replace('kgs', '').strip()
 

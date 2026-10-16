@@ -18,7 +18,7 @@ def create_thai_data(data):
                     and item['fob_amount_sgd'] == ''
                 ):
                 continue
-            print('test', item)
+            # print('test', item)
             dic = {'REF NO': ref, 'REF DATE': ref_date,
                         'ITEM NO.': idx, #item['item'],
                         'DESCRIPTION': item['description'],
