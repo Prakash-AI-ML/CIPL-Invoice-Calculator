@@ -21,6 +21,8 @@ class CiplListBase(BaseModel):
     cipl_ori: Optional[str] = None
     cipl_fnl: Optional[str] = None
     divided_by: Optional[float] = None
+    notify_text: Optional[str] = None
+    notify: Optional[bool] = None
 
 
 # Create schema
@@ -42,6 +44,8 @@ class CiplListUpdate(BaseModel):
     divided_by: Optional[float] = None
     status: Optional[StatusEnum] = None
     updated_by:  Optional[int] = None
+    notify_text: Optional[str] = None
+    notify: Optional[bool] = None
 
 
 # Response schema

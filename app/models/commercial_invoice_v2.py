@@ -86,6 +86,18 @@ class CiplList(BaseDB):
         nullable=True,
         comment="Your custom division factor (?)"
     )
+    notify = Column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Whether notify details are enabled"
+    )
+
+    notify_text = Column(
+        Text,
+        nullable=True,
+        comment="Notify address and tax details"
+    )
 
     # Status
     status = Column(

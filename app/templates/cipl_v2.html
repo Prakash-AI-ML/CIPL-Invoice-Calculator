@@ -9,6 +9,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
+        #notifyText {
+    overflow-y: hidden;
+    resize: none;
+    box-sizing: border-box;
+    min-height: 120px;
+}
         body {
             background: linear-gradient(135deg, #1f4037, #99f2c8);
             min-height: 100vh;
@@ -102,6 +108,50 @@
                             <label class="form-label fw-semibold">DIVIDED BY</label>
                             <input type="number" step="any" class="form-control" id="pdfDividedBy">
                         </div>
+                        
+                        <!-- NOTIFY Toggle -->
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <label class="form-label fw-semibold mb-0" for="notifyToggle">
+                                    Notify
+                                </label>
+
+                                <div class="form-check form-switch">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        id="notifyToggle"
+                                        role="switch"
+                                    >
+                                    <label class="form-check-label" for="notifyToggle">
+                                        <span id="notifyToggleLabel">False</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NOTIFY Text -->
+                        <div class="col-12" id="notifyTextContainer" style="display: none;">
+                            <label class="form-label fw-semibold" for="notifyText">
+                                Notify Text
+                            </label>
+
+                            <textarea
+                                class="form-control"
+                                id="notifyText"
+                                rows="5"
+                                placeholder="Enter Notify details"
+                            >Kobchock Logistics &amp; Supply Co., Ltd.
+120/13 Moo 1, Ching Kho Subdistrict,
+Singhanakhon District, Songkhla Province
+90280, Thailand
+Tax ID: 0905542000438 (Head Office)</textarea>
+
+                            <small class="text-muted">
+                                You can edit these details before generating the documents.
+                            </small>
+                        </div>
+
                     </div>
 
                     <div class="d-grid mt-4">
@@ -192,6 +242,37 @@ const downloadCurrentDocxBtn  = document.getElementById('downloadCurrentDocxBtn'
 const downloadCurrentBothBtn  = document.getElementById('downloadCurrentBothBtn');
 const downloadAllBtn          = document.getElementById('downloadAllBtn');
 
+const notifyToggle = document.getElementById("notifyToggle");
+const notifyToggleLabel = document.getElementById("notifyToggleLabel");
+const notifyTextContainer = document.getElementById("notifyTextContainer");
+const notifyText = document.getElementById("notifyText");
+
+// Automatically adjust textarea height
+function autoResizeTextarea() {
+    notifyText.style.height = "auto";
+    notifyText.style.height = notifyText.scrollHeight + "px";
+}
+
+// Resize when the content changes
+notifyText.addEventListener("input", autoResizeTextarea);
+
+// Toggle visibility
+notifyToggle.addEventListener("change", function () {
+    const isNotifyEnabled = this.checked;
+
+    notifyToggleLabel.textContent = isNotifyEnabled ? "True" : "False";
+    notifyTextContainer.style.display = isNotifyEnabled ? "block" : "none";
+
+    if (isNotifyEnabled) {
+        autoResizeTextarea();
+    }
+});
+
+// Adjust height on initial page load
+window.addEventListener("load", autoResizeTextarea);
+
+
+
 function revokeAllUrls() {
     filesData.forEach(f => {
         if (f.pdfUrl) URL.revokeObjectURL(f.pdfUrl);
@@ -278,7 +359,14 @@ async function processForm(formId, endpoint, acceptTypes) {
         loaderText.textContent = "Generating CIPL PDF files...";
         loaderSubText.textContent = `Converting ${Math.floor(files.length / 2)} documents to PDF`;
         
-        const headers = { "Authorization": `Bearer ${token}` };
+        // const headers = { "Authorization": `Bearer ${token}` };
+        const headers = {
+    "Authorization": `Bearer ${token}`,
+    "notify": String(notifyToggle.checked),
+    "notify_text": notifyToggle.checked
+        ? encodeURIComponent(notifyText.value.trim())
+        : ""
+};
         if (dividedBy) headers["divided_by"] = dividedBy;
 
 
@@ -665,6 +753,12 @@ function prepareCiplListPayload(jobNumber, vessel, voyage, truckType, blNo, divi
         // Original version
         cipl_ori = keys.map(key => `${key}-ORI`).join(',');
     }
+    const notifyEnabled = document.getElementById("notifyToggle").checked;
+
+    const notifyTextValue = notifyEnabled
+        ? document.getElementById("notifyText").value.trim()
+        : null;
+
 
     return {
         job_number: jobNumber || null,
@@ -676,6 +770,9 @@ function prepareCiplListPayload(jobNumber, vessel, voyage, truckType, blNo, divi
         group_number: groupNumber || null,
         cipl_ori: cipl_ori,
         cipl_fnl: cipl_fnl,
+        // New fields
+        notify: notifyEnabled,
+        notify_text: notifyTextValue,
         created_by: getCookie('user_id'),      // TODO: Replace with actual logged-in user ID
         updated_by: getCookie('user_id')
     };

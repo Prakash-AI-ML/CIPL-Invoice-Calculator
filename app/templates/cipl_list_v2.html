@@ -1,6 +1,13 @@
 <h4>CIPL Lists</h4>
 
 <style>
+  #editListNotifyText {
+  overflow-y: hidden;
+  resize: none;
+  box-sizing: border-box;
+  min-height: 90px;
+  width: 100%;
+}
   .dataTables_wrapper .dropdown-menu {
     position: absolute !important;
     z-index: 1051 !important;
@@ -178,24 +185,48 @@
           </div>
 
           <h6>ITEMS</h6>
+
+          
           <div class="table-responsive mb-4">
             <table class="table table-bordered" id="editItemsTable">
               <thead class="table-light">
+
                 <tr>
-                  <th>ITEM NO.</th>
-                  <th>DESCRIPTION</th>
-                  <th>SERIAL NO.</th>
-                  <th>UOM</th>
-                  <th>COO</th>
-                  <th>QTY</th>
-                  <th>UNIT COST</th>
-                  <th>TOTAL - SGD $</th>
-                  <th><button type="button" class="btn btn-sm btn-success" id="addItemRow">+ Add Row</button></th>
+                  <th style="width: 67px;">ITEM NO.</th>
+                  <th style="width: 250px;">DESCRIPTION</th>
+                  <th style="width: 110px;">SERIAL NO.</th>
+                  <th style="width: 80px;">UOM</th>
+                  <th style="width: 100px;">COO</th>
+                  <th style="width: 80px;">QTY</th>
+                  <th style="width: 130px;">UNIT COST</th>
+                  <th style="width: 150px;">TOTAL - SGD $</th>
+                  <th style="width: 120px; min-width: 120px;">
+                    <div class="d-flex gap-2 align-items-center">
+                      <input
+                        type="number"
+                        id="insertItemPosition"
+                        class="form-control form-control-sm"
+                        min="1"
+                        placeholder="Position"
+                        title="Enter the position for the new row"
+                        style="width: 90px;"
+                      >
+
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-success text-nowrap"
+                        id="addItemRow"
+                      >
+                        + Add Row
+                      </button>
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody></tbody>
             </table>
           </div>
+
 
           <h6>PACKING DETAILS</h6>
           <div class="row mb-3">
@@ -354,6 +385,56 @@
                 <option value="DRAFT">DRAFT</option>
               </select>
             </div>
+
+
+
+          <!-- NOTIFY Toggle -->
+          <div class="col-6">
+            <div class="d-flex justify-content-between align-items-center">
+              <label class="form-label fw-semibold mb-0" for="editListNotifyToggle">
+                Notify
+              </label>
+
+              <div class="form-check form-switch mb-0">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="editListNotifyToggle"
+                  role="switch"
+                >
+                <label class="form-check-label" for="editListNotifyToggle">
+                  <span id="editListNotifyToggleLabel">False</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- NOTIFY Text: 6 Columns -->
+          <div class="col-6"
+              id="editListNotifyTextContainer"
+              style="display: none;">
+
+            <label class="form-label fw-semibold" for="editListNotifyText">
+              Notify Text
+            </label>
+
+            <textarea
+              class="form-control"
+              id="editListNotifyText"
+              rows="5"
+              placeholder="Enter Notify details"
+            >Kobchock Logistics &amp; Supply Co., Ltd.
+          120/13 Moo 1, Ching Kho Subdistrict,
+          Singhanakhon District, Songkhla Province
+          90280, Thailand
+          Tax ID: 0905542000438 (Head Office)</textarea>
+
+            <small class="text-muted">
+              You can edit these details before generating the documents.
+            </small>
+          </div>
+
+
           </div>
         </form>
       </div>
@@ -388,6 +469,39 @@
   const ciplListError = document.getElementById("ciplListError");
   // const actionButtons = document.getElementById("actionButtons");
 
+const notifyToggle = document.getElementById("editListNotifyToggle");
+const notifyToggleLabel = document.getElementById("editListNotifyToggleLabel");
+const notifyTextContainer = document.getElementById("editListNotifyTextContainer");
+const notifyText = document.getElementById("editListNotifyText");
+
+// Auto-adjust textarea height
+function autoResizeNotifyTextarea() {
+  if (!notifyText || notifyTextContainer.style.display === "none") return;
+
+  notifyText.style.height = "auto";
+  notifyText.style.height = Math.max(
+    90,
+    notifyText.scrollHeight
+  ) + "px";
+}
+
+// Toggle visibility
+function updateNotifyVisibility() {
+  const enabled = notifyToggle.checked;
+
+  notifyToggleLabel.textContent = enabled ? "True" : "False";
+  notifyTextContainer.style.display = enabled ? "block" : "none";
+
+  if (enabled) {
+    // Wait until the browser has rendered the visible textarea
+    requestAnimationFrame(autoResizeNotifyTextarea);
+  }
+}
+
+notifyText.addEventListener("input", autoResizeNotifyTextarea);
+notifyToggle.addEventListener("change", updateNotifyVisibility);
+
+
   // ==================== LOAD TABLE ====================
   async function loadCipl() {
     if ($.fn.DataTable.isDataTable('#ciplListTableV2')) {
@@ -408,7 +522,7 @@
 
         const tally_file_name = buildFileName("TALLY_SHEET", c)
         const thai_file_name = buildFileName("THAI_CUSTOMS_DOCX_SHEET", c)
-        console.log(tally_file_name)
+        // console.log(tally_file_name)
         // const refNo = c.raw_json?.reference_no ?? "-";
         // const isOriginal = c.is_original === true;
 
@@ -685,6 +799,88 @@ function renderExpandableList(value, type, rowId) {
 }
 
 
+document.getElementById("addItemRow").addEventListener("click", () => {
+  const tbody = document.querySelector("#editItemsTable tbody");
+  const positionInput = document.getElementById("insertItemPosition");
+
+  const requestedPosition = parseInt(positionInput.value, 10);
+  const rowCount = tbody.rows.length;
+
+  // Empty or invalid position means insert at the bottom
+  const isBottom =
+    positionInput.value.trim() === "" ||
+    !Number.isInteger(requestedPosition) ||
+    requestedPosition < 1 ||
+    requestedPosition > rowCount + 1;
+
+  const position = isBottom
+    ? rowCount + 1
+    : requestedPosition;
+
+  // ITEM NO. is independent of the table row position
+  let newItemNumber = "";
+
+  if (isBottom) {
+    const itemInputs = Array.from(
+      tbody.querySelectorAll('input[name$="].item"]')
+    );
+
+    // Search backwards for the last non-empty ITEM NO.
+    for (let i = itemInputs.length - 1; i >= 0; i--) {
+      const value = itemInputs[i].value.trim();
+
+      // Skip empty item numbers
+      if (value === "") continue;
+
+      const previousNumber = Number(value);
+
+      // Increment only if the last non-empty item number is numeric
+      if (Number.isInteger(previousNumber)) {
+        newItemNumber = String(previousNumber + 1);
+      }
+
+      break;
+    }
+  }
+
+  // Insert a new row; ITEM NO. remains blank for middle insertion
+  addItemRow({
+    item: newItemNumber,
+    description: "",
+    serial_no: "",
+    uom: "",
+    coo: "",
+    qty: "",
+    unit_cost: "",
+    total: ""
+  });
+
+  // Move the new row to the requested position
+  const newRow = tbody.lastElementChild;
+  tbody.insertBefore(newRow, tbody.rows[position - 1] || null);
+
+  // Update array indexes in input names only.
+  // Do not change ITEM NO. values.
+  Array.from(tbody.rows).forEach((row, index) => {
+    row.querySelectorAll("input, textarea").forEach(input => {
+      input.name = input.name.replace(
+        /^items\[\d+\]/,
+        `items[${index}]`
+      );
+    });
+  });
+
+  // Update display numbering only
+  renumberTable();
+
+  // Clear the position field
+  positionInput.value = "";
+});
+
+
+
+
+
 function toggleExpand(id, expand) {
   const collapsed = document.getElementById(id + "_collapsed");
   const expanded = document.getElementById(id + "_expanded");
@@ -832,6 +1028,10 @@ function generate_thai_sheet(cipl_id, filename) {
 async function generateCIPL(cipl_id, file_name) {
   try {
     const payload = await fetchCiplData(cipl_id);
+    // Add cipl_list_id to each payload key
+    Object.keys(payload).forEach(key => {
+        payload[key].cipl_list_id = cipl_id;
+    });
 
     // const payload = {};
 
@@ -888,6 +1088,8 @@ async function onPreview(refNo, type, rowId) {
 
         // IMPORTANT: Store full original raw_json
         const RawJson = JSON.parse(JSON.stringify(invoice.raw_json));
+        // Add cipl_list_id to RawJson
+        RawJson.cipl_list_id = invoice.cipl_list_id;
         const RefNo = RawJson.reference_no
         const isOriginal = invoice.is_original === true;
 
@@ -975,20 +1177,18 @@ async function onEdit(refNo, type, rowId) {
           ? invoice.raw_json.items 
           : invoice.raw_json.original_items || [];
 
-        itemsArray.forEach((item, index) => {
+        itemsArray.forEach((item) => {
           if (!item.item && !item.description) return;
 
           addItemRow({
-            item_no:   item.item || (index + 1),
-            description: item.description || "",
-            serial_no:   item.gpn || "",
-            uom:         item.uom || "",
-            coo:         item.country_of_origin || "",
-            qty:         item.quantity || "",
-            unit_cost:   item.fob_price_sgd.replace(/[$']/g, '').replace(/\s+/g, '') || "",
-            total:       item.fob_amount_sgd.replace(/[$']/g, '').replace(/\s+/g, '') || ""
-            // unit_cost:   cleanPrice(item.fob_price_sgd),
-            // total:       cleanPrice(item.fob_amount_sgd)
+            item: item.item ?? "",
+            description: item.description ?? "",
+            serial_no: item.gpn ?? "",
+            uom: item.uom ?? "",
+            coo: item.country_of_origin ?? "",
+            qty: item.quantity ?? "",
+            unit_cost: (item.fob_price_sgd ?? "").replace(/[$']/g, '').replace(/\s+/g, ''),
+            total: (item.fob_amount_sgd ?? "").replace(/[$']/g, '').replace(/\s+/g, '')
           });
         });
 
@@ -1095,8 +1295,16 @@ function disableAllFieldsExceptContainer() {
       //  <td>
 //     <textarea class="form-control" name="items[${rowIndex}].item_no">${escapeHtml(item.item_no || "")}</textarea>
 // </td> 
+// <td>${displayNo}</td>
       tr.innerHTML = `
-        <td>${displayNo}</td>
+        <td>
+          <input
+            type="text"
+            class="form-control"
+            name="items[${rowIndex}].item"
+            value="${escapeHtml(String(item.item ?? ""))}"
+          >
+        </td>
         <td><textarea class="form-control" rows="3" name="items[${rowIndex}].description">${escapeHtml(item.description || "")}</textarea></td>
         <td><input type="text" class="form-control" name="items[${rowIndex}].gpn" value="${escapeHtml(item.serial_no || "")}"></td>
         <td><input type="text" class="form-control" name="items[${rowIndex}].uom" value="${escapeHtml(item.uom || "")}"></td>
@@ -1127,11 +1335,16 @@ function disableAllFieldsExceptContainer() {
       priceEl.addEventListener("input", recalc);
     }
 
-    function renumberTable() {
+    function renumberTable1() {
       document.querySelectorAll("#editItemsTable tbody tr").forEach((row, i) => {
         row.cells[0].textContent = i + 1;
       });
     }
+    function renumberTable() {
+  // ITEM NO. is independent of row position.
+  // Do not modify the first cell or its input value.
+  // Row ordering is handled by the table itself.
+}
 
     function escapeHtml(text) {
       const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
@@ -1206,7 +1419,8 @@ function disableAllFieldsExceptContainer() {
         const desc = row.querySelector("textarea").value.trim();
         if (!desc) return;
         newItems.push({
-          item: (index + 1).toString(),
+          // item: (index + 1).toString(),
+          item: row.querySelector('input[name$="].item"]').value,
           description: desc,
           gpn: row.querySelector(`input[name$="].gpn"]`)?.value.trim() || "",
           uom: row.querySelector(`input[name$="].uom"]`)?.value.trim() || "",
@@ -1430,6 +1644,12 @@ async function editCiplList(cipl_id) {
     document.getElementById("editListBlNo").value = record.bl_no || "";
     document.getElementById("editListDividedBy").value = record.divided_by || "";
     document.getElementById("editListStatus").value = record.status || "ACTIVE";
+    
+    notifyToggle.checked = record.notify === true;
+    notifyText.value = record.notify_text ?? "";
+
+    updateNotifyVisibility();
+
 
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById("ciplListEditModal"));
@@ -1453,7 +1673,10 @@ document.getElementById("saveCiplListBtn").addEventListener("click", async () =>
     truck_type: document.getElementById("editListTruckType").value.trim(),
     bl_no: document.getElementById("editListBlNo").value.trim(),
     divided_by: parseInt(document.getElementById("editListDividedBy").value) || 0,
-    status: document.getElementById("editListStatus").value
+    status: document.getElementById("editListStatus").value,
+    // New fields
+    notify: document.getElementById("editListNotifyToggle").checked,
+    notify_text: document.getElementById("editListNotifyText").value.trim()
   };
 
   try {

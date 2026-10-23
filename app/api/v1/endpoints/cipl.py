@@ -19,6 +19,7 @@ from app.cipl.documents import create_documents
 from app.db.session import get_db
 from app.api.dependencies import get_user_permissions_detailed
 from app.crud.log_manage import backend_logs
+from urllib.parse import unquote
 import os
 import io, uuid, zipfile, logging
 from docx2pdf import convert
@@ -290,9 +291,21 @@ async def generate_docx_and_pdf(
 async def generate_docx_and_pdf(
     request: Request,
     divided_by: Optional[float] = Header(None, convert_underscores=False),
+    notify: bool = Header(
+        False, convert_underscores=False
+    ),
+    notify_text: Optional[str] = Header(
+        None, convert_underscores=False
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_user_permissions_detailed),
 ):
+    if notify and notify_text:
+        notify_text = unquote(notify_text)
+        notify_text = notify_text.strip().splitlines()
+        notify_text[0] = "NOTIFY:\n" + notify_text[0]
+
+
     form = await request.form()
     mapping_data = await get_cipl_descs(db)
 
@@ -353,7 +366,7 @@ async def generate_docx_and_pdf(
                 docx_filename = f"{base_name}.docx"
                 pdf_filename  = f"{base_name}.pdf"
                 # ─── Create DOCX in memory ───────────────────────────────────────
-                document = create_documents(data=value, filename=docx_filename)
+                document = create_documents(data=value, filename=docx_filename, notify= notify, notify_text=notify_text)
 
                 docx_buffer = io.BytesIO()
                 document.save(docx_buffer)
@@ -532,6 +545,7 @@ async def generate_docx_and_pdf(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_user_permissions_detailed),
 ):
+    
     mapping_data = await get_cipl_descs(db)
 
     DESCRIPTIONS_DATA = {
@@ -560,6 +574,23 @@ async def generate_docx_and_pdf(
 
             for key, value in data.items():
 
+                notify, notify_text = False, ''
+                if 'cipl_list_id' in value:
+                    cipl_id = value['cipl_list_id']
+                    from app.crud.commercial_invoice_v2 import get_cipl_list
+                    cipl_data = await get_cipl_list(db, cipl_id)
+                    
+                    notify = cipl_data.notify
+                    notify_text = cipl_data.notify_text
+            
+                    if notify and notify_text:
+                        notify_text = unquote(notify_text)
+                        notify_text = notify_text.strip().splitlines()
+                        notify_text[0] = "NOTIFY:\n" + notify_text[0]
+                        print(notify_text)
+                
+                
+
                 # ─── Prepare clean filenames ───────────────────────────────
                 base_name = f"CIPL_{key}"
                 docx_filename = f"{base_name}.docx"
@@ -576,7 +607,9 @@ async def generate_docx_and_pdf(
                 # ─── Create DOCX in memory ──────────────────────────────────
                 document = create_documents(
                     data=value,
-                    filename=docx_filename
+                    filename=docx_filename,
+                    notify_text= notify_text,
+                    notify= notify
                 )
 
                 docx_buffer = io.BytesIO()

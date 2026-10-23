@@ -1,5 +1,5 @@
 from docx import Document
-from docx.shared import Cm, Pt, RGBColor
+from docx.shared import Cm, Pt, RGBColor, Inches
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_TAB_ALIGNMENT
 from docx.enum.table import WD_ALIGN_VERTICAL
 from docx.oxml import OxmlElement
@@ -350,6 +350,83 @@ def set_consignee(doc2, consginee, labels):
     # doc2.add_paragraph()
     return doc2
 
+def set_consignee_notify(doc2, consginee, labels, notify = ["NOTIFY:\nKobchock Logistics & Supply Co., Ltd.",
+                                                    "120/13 Moo 1, Ching Kho Subdistrict,",
+                                                    "Singhanakhon District, Songkhla Province",
+                                                    "90280, Thailand",
+                                                    "Tax ID: 0905542000438 (Head Office)"]
+                                                    ):
+    # Add table
+    table = doc2.add_table(rows=1, cols=4)
+    table.allow_autofit = False
+
+
+    def add_run1(p, text, bold=False, align=None):
+        if align is not None:
+            p.alignment = align
+        run = p.add_run(text)
+        run.font.name = "Arial"
+        run.font.size = Pt(9)
+        run.bold = bold
+        run._element.rPr.rFonts.set(qn('w:eastAsia'), "Arial")
+
+    def add_run(p, text, bold=False, align=None, indent=None):
+        if align is not None:
+            p.alignment = align
+        if indent is not None:
+            p.paragraph_format.left_indent = Inches(indent)
+
+        run = p.add_run(text)
+        run.font.name = "Arial"
+        run.font.size = Pt(9)
+        run.bold = bold
+        run._element.rPr.rFonts.set(qn('w:eastAsia'), "Arial")
+
+    # Column widths — scaled to share the same total width as every
+    # other table in the document (PAGE_CONTENT_WIDTH)
+    col_widths = [9.46, 4.92, 5.02]
+    col_widths = [6.69, 6.01, 4.01, 2.73]
+    set_table_column_widths(table, col_widths)
+
+    for i, cell in enumerate(table.rows[0].cells):
+
+        if i == 0:
+            p = cell.paragraphs[0]
+            for idx, con_ in enumerate(consginee):
+                bold = False
+                if con_.endswith('189/388 Village No. 5, Pharam 2Rd, Panthai Norasing, Muang,'):
+                    con_ = con_.replace('189/388 Village No. 5, Pharam 2Rd, Panthai Norasing, Muang,', '189/388 Village No. 5, Pharam 2Rd, Panthai')
+                if con_.endswith('Samut Sakhon 74000'):
+                    con_ = con_.replace('Samut Sakhon 74000', 'Norasing, Muang, Samut Sakhon 74000')
+                if idx == 0:
+                    bold = True
+                add_run(p, con_ +"\n", bold=bold)
+
+        elif i == 1:
+            p = cell.paragraphs[0]
+            for idx, con_ in enumerate(notify):
+                bold = False
+                if idx == 0:
+                    bold = True
+                add_run(p, con_ +"\n", bold=bold, indent=-0.083)
+
+
+        elif i == 2:
+            for i in range(7):
+                p_mid = cell.paragraphs[0] if i == 0 else cell.add_paragraph()
+                add_run(p_mid, list(labels.keys())[i], bold=True, align=WD_ALIGN_PARAGRAPH.RIGHT)
+
+        else:
+            for i in range(7):
+                p_right = cell.paragraphs[0] if i == 0 else cell.add_paragraph()
+                add_run(p_right, list(labels.values())[i], align=WD_ALIGN_PARAGRAPH.RIGHT)
+                # p_right.paragraph_format.right_indent = Cm(0.19)
+
+
+    # doc2.add_paragraph()
+    return doc2
+
+
 def add_packing_details(doc, col_widths, packing_details, indent):
 
     table = doc.tables[-1]
@@ -601,7 +678,7 @@ def set_footer(doc2):
     return doc2
 
 
-def create_documents(data, filename):
+def create_documents(data, filename, notify = False, notify_text = ''):
     # ───────────────────────────────────────────────
     # 1. Load original & create new doc (your code)
     # ───────────────────────────────────────────────
@@ -613,7 +690,11 @@ def create_documents(data, filename):
     doc = set_logo(doc, customer= data['shipper'])
     # apply_default_font(doc, font_name='Arial', font_size=9)
     doc = set_header(doc)
-    doc = set_consignee(doc, consginee= data['importer_of_record'], labels= data['labels'])
+    if notify:
+        doc = set_consignee_notify(doc, consginee= data['importer_of_record'], labels= data['labels'], notify= notify_text)
+    else:
+        doc = set_consignee(doc, consginee= data['importer_of_record'], labels= data['labels'])
+        
     doc = add_items_table(doc, items= data['items'], packing_details = data['packing_details'], total = data['total'])
 
     doc = set_footer(doc)
