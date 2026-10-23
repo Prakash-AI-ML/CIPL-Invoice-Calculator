@@ -358,20 +358,27 @@ async function processForm(formId, endpoint, acceptTypes) {
         // Third phase: Generating PDF
         loaderText.textContent = "Generating CIPL PDF files...";
         loaderSubText.textContent = `Converting ${Math.floor(files.length / 2)} documents to PDF`;
-        
+        const params = new URLSearchParams();
+
+        // params.set("notify", String(notifyToggle.checked));
+
+        params.set(
+            "notify_text",
+            notifyToggle.checked ? notifyText.value.trim() : ""
+        );
         // const headers = { "Authorization": `Bearer ${token}` };
         const headers = {
     "Authorization": `Bearer ${token}`,
     "notify": String(notifyToggle.checked),
-    "notify_text": notifyToggle.checked
-        ? encodeURIComponent(notifyText.value.trim())
-        : ""
+    // "notify_text": notifyToggle.checked
+    //     ? encodeURIComponent(notifyText.value.trim())
+    //     : ""
 };
         if (dividedBy) headers["divided_by"] = dividedBy;
 
 
         // Now make the actual API call (this will take the remaining time)
-        const res = await fetch(`${API_BASE}${endpoint}`, {
+        const res = await fetch(`${API_BASE}${endpoint}?${params.toString()}`, {
             method: "POST",
             headers,
             body: formData
