@@ -295,11 +295,17 @@ async def generate_docx_and_pdf(
         False, convert_underscores=False
     ),
     notify_text: Optional[str] = Header(
-        None, convert_underscores=False
+        "", convert_underscores=False
     ),
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_user_permissions_detailed),
 ):
+
+    logging.info(
+    "notify=%r, raw notify_text=%r",
+    request.headers.get("notify"),
+    request.headers.get("notify_text"),
+)
     if notify and notify_text:
         notify_text = unquote(notify_text)
         notify_text = notify_text.strip().splitlines()
@@ -538,8 +544,8 @@ async def generate_docx_and_pdf(
 
 
 
-@router.post("/pdf-preview")
-async def generate_docx_and_pdf(
+@router.post("/pdf-preview1")
+async def generate_docx_and_pdf1(
     request: Request,
     data: dict,
     db: AsyncSession = Depends(get_db),
@@ -743,6 +749,204 @@ async def generate_docx_and_pdf(
             status_code=500,
             detail=f"Processing failed: {str(e)}"
         )
+
+
+
+@router.post("/pdf-preview")
+async def generate_docx_and_pdf(
+    request: Request,
+    data: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: dict = Depends(get_user_permissions_detailed),
+):
+    mapping_data = await get_cipl_descs(db)
+
+    DESCRIPTIONS_DATA = {
+        "item_id": [],
+        "original": [],
+        "modified": [],
+        "lines": [],
+    }
+
+    for row in mapping_data:
+        DESCRIPTIONS_DATA["item_id"].append(row.item_id)
+        DESCRIPTIONS_DATA["original"].append(row.original)
+        DESCRIPTIONS_DATA["modified"].append(row.modified)
+        DESCRIPTIONS_DATA["lines"].append(row.lines)
+
+    zip_buffer = io.BytesIO()
+
+    try:
+        with zipfile.ZipFile(
+            zip_buffer,
+            "w",
+            zipfile.ZIP_DEFLATED,
+        ) as zipf:
+
+            result_data = {}
+
+            for key, value in data.items():
+
+                notify = False
+                notify_text = ""
+
+                if "cipl_list_id" in value:
+                    cipl_id = value["cipl_list_id"]
+
+                    from app.crud.commercial_invoice_v2 import get_cipl_list
+
+                    cipl_data = await get_cipl_list(db, cipl_id)
+
+                    if cipl_data:
+                        notify = cipl_data.notify
+                        notify_text = cipl_data.notify_text or ""
+
+                    if notify and notify_text:
+                        notify_text = unquote(notify_text)
+                        notify_text = notify_text.strip().splitlines()
+
+                        if notify_text:
+                            notify_text[0] = "NOTIFY:\n" + notify_text[0]
+
+
+                        print(notify_text)
+
+                # Prepare filenames
+                base_name = f"CIPL_{key}"
+                docx_filename = f"{base_name}.docx"
+                pdf_filename = f"{base_name}.pdf"
+
+                # Prepare CIPL data
+                value = get_data_to_cipl(
+                    value,
+                    DESCRIPTIONS_DATA,
+                )
+
+                result_data[key] = value
+
+                # Create DOCX in memory
+                document = create_documents(
+                    data=value,
+                    filename=docx_filename,
+                    notify_text=notify_text,
+                    notify=notify,
+                )
+
+                docx_buffer = io.BytesIO()
+                document.save(docx_buffer)
+                docx_buffer.seek(0)
+
+                # Convert DOCX -> PDF using temporary files
+                with tempfile.TemporaryDirectory(
+                    prefix="cipl_"
+                ) as tmp_dir:
+
+                    docx_temp_path = os.path.join(
+                        tmp_dir,
+                        "temp_input.docx",
+                    )
+
+                    pdf_output_dir = os.path.join(
+                        tmp_dir,
+                        "pdf_output",
+                    )
+
+                    os.makedirs(
+                        pdf_output_dir,
+                        exist_ok=True,
+                    )
+
+                    # Write DOCX to temporary file
+                    with open(docx_temp_path, "wb") as f:
+                        f.write(docx_buffer.getvalue())
+
+                    # IMPORTANT:
+                    # Pass the FULL PDF FILE PATH,
+                    # not the output directory.
+                    pdf_temp_path = os.path.join(
+                        pdf_output_dir,
+                        "temp_input.pdf",
+                    )
+
+                    # Convert DOCX -> PDF
+                    convert_docs_pdf(
+                        docx_temp_path,
+                        pdf_temp_path,
+                    )
+
+                    # Verify PDF exists
+                    if not os.path.isfile(pdf_temp_path):
+                        generated_files = (
+                            os.listdir(pdf_output_dir)
+                            if os.path.exists(pdf_output_dir)
+                            else []
+                        )
+
+                        raise FileNotFoundError(
+                            "PDF conversion completed but the "
+                            "expected PDF was not found: "
+                            f"{pdf_temp_path}. "
+                            f"Generated files: {generated_files}"
+                        )
+
+                    # Read PDF before temporary directory is removed
+                    with open(pdf_temp_path, "rb") as f:
+                        pdf_bytes = f.read()
+
+                # Prepare PDF buffer
+                pdf_buffer = io.BytesIO(pdf_bytes)
+                pdf_buffer.seek(0)
+
+                docx_buffer.seek(0)
+
+                # Add DOCX and PDF to ZIP
+                zipf.writestr(
+                    f"WORD/{docx_filename}",
+                    docx_buffer.getvalue(),
+                )
+
+                zipf.writestr(
+                    f"PDF/{pdf_filename}",
+                    pdf_buffer.getvalue(),
+                )
+
+            # Convert result data to JSON
+            result_json = json.dumps(
+                result_data,
+                ensure_ascii=False,
+                indent=4,
+            )
+
+            # Add JSON to ZIP
+            zipf.writestr(
+                "results.json",
+                result_json,
+            )
+
+        # Reset ZIP buffer before sending response
+        zip_buffer.seek(0)
+
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": (
+                    'attachment; filename="converted_files.zip"'
+                )
+            },
+        )
+
+    except Exception as e:
+        logging.error(
+            f"Error processing files: {str(e)}",
+            exc_info=True,
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail=f"Processing failed: {str(e)}",
+        )
+
 
 @router.post("/download-docx")
 async def download_docx(
