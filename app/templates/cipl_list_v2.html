@@ -448,6 +448,72 @@
   </div>
 </div>
 
+
+<!-- COMBINED ORI + FNL CONTAINER EDIT MODAL -->
+<div class="modal fade" id="ciplCombinedContainerModal" tabindex="-1"
+     aria-labelledby="ciplCombinedContainerModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title" id="ciplCombinedContainerModalLabel">
+          <i class="bi bi-truck me-2"></i>
+          Container &amp; Shipping Mark Edit — ORI + FNL
+        </h5>
+        <button type="button" class="btn-close btn-close-white"
+                data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-info">
+          Container, seal and shipping mark can be synchronized between
+          matching ORI and FNL invoices. Invoice prices, quantities and
+          descriptions will remain independent.
+        </div>
+
+        <div id="combinedContainerLoading" class="text-center py-4 d-none">
+          <div class="spinner-border text-primary"></div>
+          <p class="mt-2">Loading ORI/FNL invoices...</p>
+        </div>
+
+        <div id="combinedContainerError" class="alert alert-danger d-none"></div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered align-middle"
+                 id="combinedContainerTable">
+            <thead class="table-light">
+              <tr>
+                <th style="min-width:80px">CIPL-ORI</th>
+                <th style="min-width:80px">CIPL-FNL</th>
+                <th style="min-width:130px">Container No.</th>
+                <th style="min-width:130px">Seal No.</th>
+                <th style="min-width:250px">Shipping Mark</th>
+                <th style="min-width:80px">Update Both</th>
+                <th style="min-width:60px">Single Target</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <small class="text-muted">
+          If the matching invoice does not exist, the Update Both switch
+          will be disabled and only the available invoice will be updated.
+        </small>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary"
+                data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary"
+                id="saveCombinedContainerBtn">
+          <i class="bi bi-save me-1"></i>Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 <div id="ciplLoading1" class="text-center py-5 d-none">
   <div class="spinner-border text-primary"></div>
   <p class="mt-2">Loading CIPL Lists...</p>
@@ -559,6 +625,15 @@ notifyToggle.addEventListener("change", updateNotifyVisibility);
                 <li><a class="dropdown-item" href="#" onclick="generateCIPL(${c.id}, '${tally_file_name.replace(/'/g, "\\'").replace('TALLY_SHEET', '').trim()}')"><i class="typcn typcn-document-text me-2"></i>CIPLS</a></li>
                 <li><a class="dropdown-item" href="#" onclick="generate_tally(${c.id}, '${tally_file_name.replace(/'/g, "\\'")}')"><i class="typcn typcn-news me-2"></i>Tally Sheet</a></li>
                 <li><a class="dropdown-item" href="#" onclick="generate_thai_sheet(${c.id}, '${thai_file_name.replace(/'/g, "\\'")}')"><i class="typcn typcn-group-outline me-2"></i>Thai Sheet</a></li>
+                
+                <li>
+                  <a class="dropdown-item text-info" href="#"
+                    onclick="event.preventDefault(); editCiplContainerPair(${c.id})">
+                    <i class="bi bi-truck me-2"></i>
+                    Shipping Edit
+                  </a>
+                </li>
+
                 <li><a class="dropdown-item text-danger" href="#" onclick="deleteCIPLLIST(${c.id})"><i class="bi bi-trash me-2"></i>Delete</a></li>
               </ul>
             </div>
@@ -1094,7 +1169,7 @@ async function onPreview(refNo, type, rowId) {
         const isOriginal = invoice.is_original === true;
 
 
-          console.log(RefNo, isOriginal, RawJson)
+          // console.log(RefNo, isOriginal, RawJson)
 
           previewCipl(RefNo, isOriginal, RawJson)
 
@@ -1439,7 +1514,7 @@ function disableAllFieldsExceptContainer() {
 
       try {
         const url = `${API_BASE}/v1/cipl-list/invoice/update/${encodeURIComponent(currentRefNo)}`;
-        console.log("Sending PATCH to:", url);
+        // console.log("Sending PATCH to:", url);
 
         const res = await fetch(url, {
           method: "PATCH",
@@ -1745,7 +1820,7 @@ async function previewCipl1(refNo, isOriginal, JsonData = null) {
         currentRefNo = payloadKey
         const payload = { [payloadKey]: JsonData || {} };
 
-        console.log("Requesting preview for:", payloadKey);
+        // console.log("Requesting preview for:", payloadKey);
 
         const res = await fetch(`${API_BASE}/v1/cipl/pdf-preview`, {
             method: "POST",
@@ -1765,7 +1840,7 @@ async function previewCipl1(refNo, isOriginal, JsonData = null) {
         console.log("Content-Type:", contentType);
 
         previewZipBlob = await res.blob();
-        console.log("ZIP size:", previewZipBlob.size, "bytes");
+        // console.log("ZIP size:", previewZipBlob.size, "bytes");
 
         if (previewZipBlob.size < 2000) {
             throw new Error("ZIP file is too small – likely invalid");
@@ -1984,4 +2059,431 @@ async function previewCipl(refNo, isOriginal, JsonData = null) {
 
 </script>
 
+<script>
+  
+/* ==========================================================
+   COMBINED ORI + FNL CONTAINER / SHIPPING MARK EDIT
+   Existing individual editor remains unchanged.
+========================================================== */
 
+let combinedContainerRecords = [];
+let combinedContainerListId = null;
+
+const combinedContainerModalEl =
+  document.getElementById("ciplCombinedContainerModal");
+
+const combinedContainerModal =
+  bootstrap.Modal.getOrCreateInstance(combinedContainerModalEl);
+
+const combinedContainerTbody =
+  document.querySelector("#combinedContainerTable tbody");
+
+const combinedContainerLoading =
+  document.getElementById("combinedContainerLoading");
+
+const combinedContainerError =
+  document.getElementById("combinedContainerError");
+
+
+function combinedEscapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  })[char]);
+}
+
+
+// Normalize keys such as ES-00148-ORI and ES-00148-FNL
+function combinedBaseReference(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/-(ORI|FNL)$/i, "")
+    .trim();
+}
+
+
+function combinedIsOriginal(key, raw) {
+  if (/-ORI$/i.test(key)) return true;
+  if (/-FNL$/i.test(key)) return false;
+
+  return raw?.is_original === true;
+}
+
+
+function combinedGetContainer(raw) {
+  return raw?.container_no ??
+    raw?.labels?.["CONT NO :"] ?? "";
+}
+
+
+function combinedGetSeal(raw) {
+  return raw?.seal_no ??
+    raw?.labels?.["SEAL NO :"] ?? "";
+}
+
+
+function combinedGetShippingMark(raw) {
+  return raw?.shipping_mark ??
+    raw?.packing_details?.shipping?.[0] ?? "";
+}
+
+
+// Fetch the CIPL list and its invoice records
+async function editCiplContainerPair(ciplId) {
+  combinedContainerListId = ciplId;
+  combinedContainerRecords = [];
+  combinedContainerTbody.innerHTML = "";
+
+  combinedContainerError.classList.add("d-none");
+  combinedContainerError.textContent = "";
+  combinedContainerLoading.classList.remove("d-none");
+
+  combinedContainerModal.show();
+
+  try {
+    // Existing API helper returns the invoice payload for this list.
+    const invoicePayload = await fetchCiplData(ciplId);
+
+    if (!invoicePayload || typeof invoicePayload !== "object") {
+      throw new Error("No invoice data was returned for this CIPL list.");
+    }
+
+    const pairs = new Map();
+
+    Object.entries(invoicePayload).forEach(([key, raw]) => {
+      if (!raw || typeof raw !== "object") return;
+
+      // Accept explicit ORI/FNL suffixes on payload keys.
+      // Otherwise use raw.is_original when available.
+      const original = combinedIsOriginal(key, raw);
+      const base = combinedBaseReference(key);
+
+      if (!base) return;
+
+      if (!pairs.has(base)) {
+        pairs.set(base, {
+          base,
+          ori: null,
+          fnl: null
+        });
+      }
+
+      const pair = pairs.get(base);
+
+      const record = {
+        key,
+        base,
+        isOriginal: original,
+        raw: JSON.parse(JSON.stringify(raw))
+      };
+
+      if (original) {
+        pair.ori = record;
+      } else {
+        pair.fnl = record;
+      }
+    });
+
+    combinedContainerRecords = Array.from(pairs.values())
+      .filter(pair => pair.ori || pair.fnl);
+
+    if (!combinedContainerRecords.length) {
+      throw new Error(
+        "No ORI/FNL invoices were found. Check the payload keys returned by the API."
+      );
+    }
+
+    combinedContainerRecords.forEach((pair, index) => {
+      renderCombinedContainerRow(pair, index);
+    });
+
+  } catch (error) {
+    console.error("Combined container edit load error:", error);
+    combinedContainerError.textContent =
+      "Failed to load invoices: " + error.message;
+    combinedContainerError.classList.remove("d-none");
+  } finally {
+    combinedContainerLoading.classList.add("d-none");
+  }
+}
+
+
+function renderCombinedContainerRow(pair, index) {
+  const source = pair.ori || pair.fnl;
+  const bothExist = Boolean(pair.ori && pair.fnl);
+
+  const container = combinedGetContainer(source.raw);
+  const seal = combinedGetSeal(source.raw);
+  const shippingMark = combinedGetShippingMark(source.raw);
+
+  const tr = document.createElement("tr");
+  tr.dataset.pairIndex = String(index);
+
+  tr.innerHTML = `
+    <td>
+      ${pair.ori
+        ? `<span class="badge bg-primary">ORI</span>
+           <div>${combinedEscapeHtml(pair.ori.key)}</div>`
+        : `<span class="text-muted">ORI not found</span>`}
+    </td>
+
+    <td>
+      ${pair.fnl
+        ? `<span class="badge bg-success">FNL</span>
+           <div>${combinedEscapeHtml(pair.fnl.key)}</div>`
+        : `<span class="text-muted">FNL not found</span>`}
+    </td>
+
+    <td>
+      <input type="text" class="form-control combined-container-no"
+             value="${combinedEscapeHtml(container)}">
+    </td>
+
+    <td>
+      <input type="text" class="form-control combined-seal-no"
+             value="${combinedEscapeHtml(seal)}">
+    </td>
+
+    <td>
+      <input type="text" class="form-control combined-shipping-mark"
+             value="${combinedEscapeHtml(shippingMark)}">
+    </td>
+
+    <td>
+      <div class="form-check form-switch">
+        <input class="form-check-input combined-update-both"
+               type="checkbox"
+               role="switch"
+               ${bothExist ? "checked" : ""}
+               ${bothExist ? "" : "disabled"}
+               id="combinedUpdateBoth_${index}">
+        <label class="form-check-label"
+               for="combinedUpdateBoth_${index}">
+          ${bothExist ? "YES" : "Single invoice"}
+        </label>
+      </div>
+    </td>
+    <td>
+  <select class="form-select combined-single-target"
+          ${bothExist ? "" : "disabled"}>
+    <option value="ORI">ORI</option>
+    <option value="FNL">FNL</option>
+  </select>
+</td>
+  `;
+
+  combinedContainerTbody.appendChild(tr);
+  const toggle = tr.querySelector(".combined-update-both");
+  const singleTarget = tr.querySelector(".combined-single-target");
+
+  function updateSingleTargetState() {
+    singleTarget.disabled = toggle.checked || !bothExist;
+  }
+
+  toggle.addEventListener("change", updateSingleTargetState);
+  updateSingleTargetState();
+}
+
+
+
+
+// Update only the container-related fields.
+// Prices, quantities, descriptions, totals and other invoice fields
+// are preserved from that invoice's own raw JSON.
+function buildCombinedContainerPayload(record, values) {
+  const updatedRaw = JSON.parse(JSON.stringify(record.raw));
+
+  updatedRaw.container_no = values.containerNo;
+  updatedRaw.seal_no = values.sealNo;
+  updatedRaw.shipping_mark = values.shippingMark;
+
+  updatedRaw.labels = {
+    ...(updatedRaw.labels || {}),
+    "CONT NO :": values.containerNo,
+    "SEAL NO :": values.sealNo
+  };
+
+  updatedRaw.packing_details =
+    updatedRaw.packing_details || {};
+
+  updatedRaw.packing_details.shipping =
+    values.shippingMark ? [values.shippingMark] : [];
+
+  return {
+    jsondata: updatedRaw,
+
+    // Preserve invoice-specific metadata wherever available.
+    job_number: updatedRaw.job_number || "",
+    group_number: updatedRaw.group_number || "",
+
+    is_original: record.isOriginal
+  };
+}
+
+
+// Save an individual invoice through the existing update endpoint.
+async function saveCombinedInvoice(record, values) {
+  const payload = buildCombinedContainerPayload(record, values);
+  
+
+  // The current individual editor uses invoice.reference_number.
+  // The payload key may include -ORI / -FNL, so use the base reference.
+  const reference = record.key ||
+    record.raw.reference_no;
+
+  if (!reference) {
+    throw new Error(
+      `Missing reference number for ${record.key}`
+    );
+  }
+
+  const url =
+    `${API_BASE}/v1/cipl-list/invoice/update/` +
+    encodeURIComponent(reference);
+
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers: {
+      ...headers,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(
+      `Failed to update ${record.key}: HTTP ${response.status}` +
+      (errorText ? ` - ${errorText}` : "")
+    );
+  }
+
+  return true;
+}
+
+
+// Save the rows independently, preserving each invoice's own data.
+
+document
+  .getElementById("saveCombinedContainerBtn")
+  .addEventListener("click", async function () {
+    if (
+      !combinedContainerListId ||
+      !combinedContainerRecords.length
+    ) {
+      alert("No invoice records are loaded.");
+      return;
+    }
+
+    const saveButton = this;
+    const rows = Array.from(combinedContainerTbody.rows);
+
+    saveButton.disabled = true;
+    saveButton.innerHTML =
+      '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+    const failures = [];
+    let updatedCount = 0;
+
+    try {
+      for (const row of rows) {
+        const index = Number(row.dataset.pairIndex);
+        const pair = combinedContainerRecords[index];
+
+        if (!pair) continue;
+
+        const values = {
+          containerNo: row
+            .querySelector(".combined-container-no")
+            .value.trim(),
+
+          sealNo: row
+            .querySelector(".combined-seal-no")
+            .value.trim(),
+
+          shippingMark: row
+            .querySelector(".combined-shipping-mark")
+            .value.trim()
+        };
+
+        const updateBoth = row
+          .querySelector(".combined-update-both")
+          .checked;
+
+        // Determine which invoice records should be updated.
+        let targets;
+
+        if (updateBoth && pair.ori && pair.fnl) {
+          // Update both matching ORI and FNL invoices.
+          targets = [pair.ori, pair.fnl];
+
+        } else if (pair.ori && pair.fnl) {
+          // Update only the invoice selected by the user.
+          const selectedTarget = row
+            .querySelector(".combined-single-target")
+            .value;
+
+          targets = [
+            selectedTarget === "ORI"
+              ? pair.ori
+              : pair.fnl
+          ];
+
+        } else {
+          // Only one invoice exists, so update that invoice.
+          targets = [pair.ori || pair.fnl].filter(Boolean);
+        }
+
+        // Save each selected invoice independently.
+        for (const record of targets) {
+          try {
+            await saveCombinedInvoice(record, values);
+            updatedCount++;
+          } catch (error) {
+            console.error("Invoice update failed:", error);
+
+            failures.push(
+              `${record.invoiceNo || record.invoiceNumber || "Unknown invoice"}: ${
+                error.message || "Update failed"
+              }`
+            );
+          }
+        }
+      }
+
+      if (failures.length > 0) {
+        alert(
+          `${updatedCount} invoice update(s) succeeded.\n\n` +
+          `The following update(s) failed:\n` +
+          failures.join("\n") +
+          "\n\nPlease verify the invoices before retrying."
+        );
+      } else {
+        alert(
+          `Successfully updated ${updatedCount} invoice record(s).`
+        );
+
+        combinedContainerModal.hide();
+
+        // Keep your existing invoice refresh workflow.
+        await loadCipl();
+      }
+
+    } catch (error) {
+      console.error("Combined container save failed:", error);
+
+      alert(
+        "An unexpected error occurred while saving the invoices.\n" +
+        (error.message || "Please try again.")
+      );
+
+    } finally {
+      saveButton.disabled = false;
+      saveButton.innerHTML =
+        '<i class="bi bi-save me-1"></i>Save Changes';
+    }
+  });
+</script>
