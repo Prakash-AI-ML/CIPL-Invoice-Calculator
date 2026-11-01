@@ -320,6 +320,8 @@ def get_table_items(table, table_name= 'packing_details', divided_by = None, des
                     'FOB AMOUNT SGD':''}
 
             else:
+                print(idx)
+                print(table[7][6])
                 fob_price = '' if table[7][6] == '' else table[7][6].replace('$ ', "").replace(',', "").strip().split('\n')[idx]
                 fob_amount = '' if table[7][6] == '' else table[7][7].replace('$ ', "").replace(',', "").strip().split('\n')[idx]
                 item = {'ITEM':table[7][0].split('\n')[idx],
@@ -342,6 +344,100 @@ def get_table_items(table, table_name= 'packing_details', divided_by = None, des
          
             
     return clean_dataframe(items, description=descriptions), total_amount
+
+
+def get_table_items(
+    table,
+    table_name='packing_details',
+    divided_by=None,
+    descriptions=None
+):
+    if table_name == 'packing_details':
+        return clean_dataframe([], description=descriptions), 0
+
+    items = []
+    total_amount = 0
+
+    if not descriptions:
+        descriptions = regex(table[7][2])
+
+    row = table[7]
+
+    def split_column(value, clean_currency=False):
+        if value is None or value == '':
+            return []
+
+        values = str(value).strip().split('\n')
+
+        if clean_currency:
+            values = [
+                v.replace('$ ', '')
+                 .replace(',', '')
+                 .strip()
+                for v in values
+            ]
+
+        return values
+
+    def get_value(values, index, default=''):
+        return values[index] if index < len(values) else default
+
+    item_col = split_column(row[0])
+    gpn_col = split_column(row[1])
+    origin_col = split_column(row[3])
+    uom_col = split_column(row[4])
+    quantity_col = split_column(row[5])
+    fob_price_col = split_column(row[6], clean_currency=True)
+    fob_amount_col = split_column(row[7], clean_currency=True)
+
+    idx = 0
+
+    for desc in descriptions:
+        if re.match(r'^(MDA\d+|ROW\d+|MDA \d+|ROW \d+)', desc):
+            item = {
+                'ITEM': '',
+                'GPN': '',
+                'DESCRIPTION': desc,
+                'COUNTRY OF ORIGIN': '',
+                'UOM': '',
+                'QUANTITY': '',
+                'FOB PRICE SGD': '',
+                'FOB AMOUNT SGD': ''
+            }
+        else:
+            fob_price = get_value(fob_price_col, idx)
+            fob_amount = get_value(fob_amount_col, idx)
+
+            item = {
+                'ITEM': get_value(item_col, idx),
+                'GPN': get_value(gpn_col, idx),
+                'DESCRIPTION': desc,
+                'COUNTRY OF ORIGIN': get_value(origin_col, idx),
+                'UOM': get_value(uom_col, idx),
+                'QUANTITY': get_value(quantity_col, idx),
+                'FOB PRICE SGD': (
+                    float(fob_price)
+                    if fob_price not in (None, '')
+                    else ''
+                ),
+                'FOB AMOUNT SGD': (
+                    float(fob_amount)
+                    if fob_amount not in (None, '')
+                    else ''
+                )
+            }
+
+            idx += 1
+
+        items.append(item)
+
+    if divided_by:
+        items, total_amount = get_final_recalculate_data(
+            items, divided_by
+        )
+
+    return clean_dataframe(items, description=descriptions), total_amount
+
 
 def get_packing_details(table, lines):
     pcks = re.split(r'packing details:?\n', table[7][2], flags=re.IGNORECASE)[-1].split('\n')
