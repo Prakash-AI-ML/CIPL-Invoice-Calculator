@@ -366,6 +366,9 @@ async function processForm(formId, endpoint, acceptTypes) {
             "notify_text",
             notifyToggle.checked ? notifyText.value.trim() : ""
         );
+        if (dividedBy !== "") {
+            params.set("divided_by", dividedBy);
+        }
         // const headers = { "Authorization": `Bearer ${token}` };
         const headers = {
     "Authorization": `Bearer ${token}`,

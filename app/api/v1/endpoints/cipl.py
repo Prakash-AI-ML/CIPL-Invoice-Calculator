@@ -287,11 +287,11 @@ async def generate_docx_and_pdf(
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
 
-
 @router.post("/pdf-docx")
 async def generate_docx_and_pdf(
     request: Request,
-    divided_by: Optional[float] = Header(None, convert_underscores=False),
+    # divided_by: Optional[float] = Header(None, convert_underscores=False),
+    divided_by: Optional[float] = Query(None),
     notify: bool = Header(
         False, convert_underscores=False
     ),
@@ -301,8 +301,8 @@ async def generate_docx_and_pdf(
 ):
 
     logging.info(
-    " raw notify_text=%r",
-    notify_text,
+    " raw notify_text=%r, divided_by=%r",
+    notify_text, divided_by
 )
     if notify and notify_text:
         # notify_text = unquote(notify_text)
