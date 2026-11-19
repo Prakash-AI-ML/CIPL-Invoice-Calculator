@@ -149,7 +149,7 @@ def write_cell(cell, text, bold=False, align=WD_ALIGN_PARAGRAPH.LEFT, width=None
         if text:
             if 'ROW' in text:
                 run.underline = True
-            if  text.startswith('MDA'):
+            if  text.startswith('MDA') and len(text) < 6:
                 run.underline = True
             else:
                 new_p = cell.add_paragraph()
